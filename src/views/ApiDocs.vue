@@ -244,7 +244,7 @@ const activeSection = ref('overview')
 const showToast = ref(false)
 const toastMessage = ref('')
 
-const authCode = `curl -X POST http://127.0.0.1:5001/api/analyze \\
+const authCode = `curl -X POST https://vision.1i.wiki/api/analyze \\
   -H "X-API-Key: your-api-key" \\
   -F "image=@photo.jpg" \\
   -F "prompt=请描述这张图片"`
@@ -328,7 +328,7 @@ const jsonResponse = `{
 const textResponse = `这是一张城市街道的照片，阳光明媚，街道两旁种满了银杏树...`
 
 function getEndpointCode(endpoint: any, tab: string): string {
-  const base = 'http://127.0.0.1:5001'
+  const base = 'https://vision.1i.wiki'
   if (endpoint.path === '/api/analyze') {
     if (tab === 'curl') return `curl -X POST ${base}/api/analyze \\
   -H "X-API-Key: your-key" \\
