@@ -22,8 +22,8 @@
         </button>
       </div>
       <div class="nav-actions">
-        <router-link to="/docs" class="nav-link">
-          📚 API 文档
+        <router-link to="/privacy" class="nav-link">
+          🔐 隐私政策
         </router-link>
       </div>
     </header>
@@ -119,7 +119,7 @@
         </div>
         <p class="footer-desc">基于 MiniMax 多模态模型，支持图片分析和智能对话</p>
         <div class="footer-links">
-          <router-link to="/docs">API 文档</router-link>
+          <router-link to="/privacy">隐私政策</router-link>
           <span class="divider">|</span>
           <span>Copyright © 2023-2026 六仙云</span>
           <span class="divider">|</span>
