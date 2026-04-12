@@ -1,7 +1,7 @@
 import axios from 'axios'
 
-// Direct backend URL to bypass Vite proxy issues
-const API_BASE = 'http://localhost:5001'
+// Use relative URL - nginx should proxy /api/* to backend on port 5001
+const API_BASE = ''
 
 // API Key for external access
 const API_KEY = 'minimax-vision-api-key-2024'
