@@ -1,10 +1,7 @@
 import axios from 'axios'
 
-// Use relative URL - nginx should proxy /api/* to backend on port 5001
+// Use relative URL - nginx proxies /api/* to backend on port 5001
 const API_BASE = ''
-
-// API Key for backend authentication
-const API_KEY = 'minimax-vision-api-key-2024'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -29,7 +26,6 @@ export async function analyzeImage(file: File, prompt?: string): Promise<string>
   
   const response = await axios.post(`${API_BASE}/api/analyze`, formData, {
     headers: {
-      'X-API-Key': API_KEY,
       'Content-Type': 'multipart/form-data'
     },
     timeout: 120000 // 2 minutes timeout for image analysis
@@ -49,7 +45,6 @@ export async function sendChatMessage(
     session_id: sessionId || undefined
   }, {
     headers: {
-      'X-API-Key': API_KEY,
       'Content-Type': 'application/json'
     },
     timeout: 120000 // 2 minutes timeout
@@ -62,8 +57,6 @@ export async function clearChat(sessionId?: string): Promise<void> {
   await axios.post(`${API_BASE}/api/chat/clear`, {
     session_id: sessionId || undefined
   }, {
-    headers: {
-      'X-API-Key': API_KEY
-    }
+    headers: {}
   })
 }

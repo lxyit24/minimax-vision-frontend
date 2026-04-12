@@ -34,8 +34,8 @@ CHAT_API_HOST = os.environ.get('CHAT_API_HOST', 'https://ai.1i.wiki/v1')
 
 # 外部 API 密钥（必须设置，无默认值）
 API_KEY = os.environ.get('API_KEY', '')
-if not API_KEY:
-    raise ValueError("API_KEY environment variable is required for security")
+if not API_KEY:  # API Key不再必需，但我们保留它以备后用
+    pass  # 不再需要强制设置
 
 DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true'
 PRODUCTION = os.environ.get('PRODUCTION', 'true').lower() == 'true'
@@ -345,7 +345,7 @@ def docs():
 
 
 @app.route('/api/analyze', methods=['POST'])
-@require_api_key
+
 def analyze_upload():
     """
     上传图片文件进行分析
@@ -465,7 +465,7 @@ def analyze_upload():
 
 
 @app.route('/api/analyze/base64', methods=['POST'])
-@require_api_key
+
 def analyze_base64():
     """
     Base64 图片分析
@@ -546,7 +546,7 @@ def analyze_base64():
 
 
 @app.route('/api/analyze/url', methods=['POST'])
-@require_api_key
+
 def analyze_url():
     """
     URL 图片分析（带 SSRF 防护）
@@ -763,7 +763,7 @@ def call_minimax_chat(messages: list, session_id: str = None) -> str:
 
 
 @app.route('/api/chat', methods=['POST'])
-@require_api_key
+
 def chat():
     """
     智能对话接口
@@ -904,7 +904,7 @@ def chat():
 
 
 @app.route('/api/chat/history', methods=['GET'])
-@require_api_key
+
 def get_chat_history():
     """获取对话历史"""
     session_id = request.args.get('session_id', '')
@@ -935,7 +935,7 @@ def get_chat_history():
 
 
 @app.route('/api/chat/clear', methods=['POST'])
-@require_api_key
+
 def clear_chat():
     """清除对话历史"""
     data = request.get_json() or {}
