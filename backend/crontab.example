@@ -1,0 +1,14 @@
+# 慧眼监控 - Cron 配置
+# =========================
+# 
+# 每5分钟执行一次健康检查：
+# */5 * * * * /usr/bin/python3 /newdisk/minimax-vision-frontend/backend/check_health.py >> /var/log/huiyan-monitor.log 2>&1
+#
+# 每小时执行一次每日统计更新：
+# 0 * * * * /usr/bin/python3 /newdisk/minimax-vision-frontend/backend/check_health.py --stats-only >> /var/log/huiyan-stats.log 2>&1
+#
+# 每天凌晨2点生成日报：
+# 0 2 * * * /usr/bin/python3 /newdisk/minimax-vision-frontend/backend/check_health.py --daily-report >> /var/log/huiyan-daily.log 2>&1
+
+# 设置环境变量
+# 0 * * * * export API_BASE_URL=http://localhost:5001 && /usr/bin/python3 /newdisk/minimax-vision-frontend/backend/check_health.py

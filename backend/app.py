@@ -17,6 +17,18 @@ from subprocess import Popen, PIPE
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 
+# 导入监控模块
+from monitoring import (
+    metrics_collector,
+    log_request_to_mysql,
+    get_prometheus_metrics,
+    check_api_health,
+    init_monitoring,
+    record_alert,
+    ALERT_THRESHOLD_ERROR_RATE,
+    ALERT_THRESHOLD_RESPONSE_TIME
+)
+
 app = Flask(__name__)
 CORS(app)
 
@@ -161,10 +173,35 @@ def require_api_key(f):
     return decorated
 
 
-def log_request(ip: str, endpoint: str, status: int):
+def log_request(ip: str, endpoint: str, status: int, response_time_ms: float = 0):
     """记录请求日志"""
     if DEBUG:
-        print(f"[{datetime.now().isoformat()}] {ip} -> {endpoint} [{status}]")
+        print(f"[{datetime.now().isoformat()}] {ip} -> {endpoint} [{status}] {response_time_ms:.0f}ms")
+    
+    # 记录到内存指标收集器
+    metrics_collector.record_request(endpoint, status, response_time_ms, ip)
+    
+    # 异步记录到 MySQL
+    if status >= 400 or response_time_ms > 1000:  # 只记录错误或慢请求到 MySQL
+        error_code = None
+        if status == 429:
+            error_code = 'RATE_LIMITED'
+        elif status == 400:
+            error_code = 'BAD_REQUEST'
+        elif status == 413:
+            error_code = 'PAYLOAD_TOO_LARGE'
+        elif status >= 500:
+            error_code = 'SERVER_ERROR'
+        
+        log_request_to_mysql(
+            endpoint=endpoint,
+            method=request.method,
+            status=status,
+            response_time_ms=response_time_ms,
+            client_ip=ip,
+            user_agent=request.headers.get('User-Agent', '')[:500],
+            error_code=error_code
+        )
 
 
 # ============== 核心功能 ==============
@@ -299,6 +336,49 @@ def health():
         "status": "ok",
         "timestamp": datetime.now().isoformat(),
         "version": "2.0.0"
+    }))
+
+
+@app.route('/api/health/detailed')
+def health_detailed():
+    """详细健康检查"""
+    health_status = check_api_health()
+    return add_security_headers(jsonify({
+        "status": "ok",
+        "timestamp": datetime.now().isoformat(),
+        "version": "2.0.0",
+        "health": health_status
+    }))
+
+
+@app.route('/api/metrics')
+def metrics():
+    """Prometheus 格式指标"""
+    metrics_data = metrics_collector.get_metrics()
+    return add_security_headers(Response(
+        get_prometheus_metrics(),
+        mimetype='text/plain; charset=utf-8'
+    ))
+
+
+@app.route('/api/metrics/json')
+def metrics_json():
+    """JSON 格式指标"""
+    metrics_data = metrics_collector.get_metrics()
+    return add_security_headers(jsonify(metrics_data))
+
+
+@app.route('/api/alerts')
+def alerts():
+    """当前告警状态"""
+    active_alerts = metrics_collector.check_alerts()
+    return add_security_headers(jsonify({
+        "success": True,
+        "alerts": active_alerts,
+        "thresholds": {
+            "error_rate_percent": ALERT_THRESHOLD_ERROR_RATE,
+            "response_time_ms": ALERT_THRESHOLD_RESPONSE_TIME
+        }
     }))
 
 
@@ -961,8 +1041,11 @@ def clear_chat():
 # ============== 启动 ==============
 
 if __name__ == '__main__':
+    # 初始化监控模块
+    init_monitoring()
+    
     print("=" * 60)
-    print("  MiniMax Vision API v2.0.0")
+    print("  MiniMax Vision API v2.1.0 (with Monitoring)")
     print("=" * 60)
     print(f"  MiniMax API Host: {MINIMAX_API_HOST}")
     print(f"  API Key Set:      {'Yes' if API_KEY else 'No (unsecured)'}")
@@ -970,14 +1053,18 @@ if __name__ == '__main__':
     print("=" * 60)
     print()
     print("  Endpoints:")
-    print("    POST /api/analyze         - Upload image file")
-    print("    POST /api/analyze/base64  - Base64 image")
-    print("    POST /api/analyze/url     - Image URL")
-    print("    POST /api/chat            - AI 对话 (NEW!)")
-    print("    GET  /api/chat/history   - 获取对话历史")
-    print("    POST /api/chat/clear     - 清除对话历史")
-    print("    GET  /api/health         - Health check")
-    print("    GET  /api/docs           - API documentation")
+    print("    POST /api/analyze          - Upload image file")
+    print("    POST /api/analyze/base64   - Base64 image")
+    print("    POST /api/analyze/url      - Image URL")
+    print("    POST /api/chat             - AI 对话")
+    print("    GET  /api/chat/history    - 获取对话历史")
+    print("    POST /api/chat/clear      - 清除对话历史")
+    print("    GET  /api/health          - 健康检查")
+    print("    GET  /api/health/detailed - 详细健康检查")
+    print("    GET  /api/metrics         - Prometheus 指标")
+    print("    GET  /api/metrics/json    - JSON 指标")
+    print("    GET  /api/alerts          - 当前告警状态")
+    print("    GET  /api/docs            - API 文档")
     print()
     print("=" * 60)
     

@@ -1,0 +1,11 @@
+[Unit]
+Description=慧眼 API 定时监控检查（每5分钟）
+After=network.target minimax-vision.service
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

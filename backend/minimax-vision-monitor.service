@@ -1,0 +1,19 @@
+[Unit]
+Description=慧眼 API 监控检查服务
+After=network.target minimax-vision.service
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/newdisk/minimax-vision-frontend/backend
+EnvironmentFile=/etc/systemd/system/minimax-vision-service.env
+ExecStart=/usr/bin/python3 /newdisk/minimax-vision-frontend/backend/check_health.py
+StandardOutput=journal
+StandardError=journal
+
+# 资源限制
+MemoryMax=256M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target
