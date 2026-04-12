@@ -22,8 +22,8 @@
         </button>
       </div>
       <div class="nav-actions">
-        <router-link to="/privacy" class="nav-link">
-          🔐 隐私政策
+        <router-link to="/docs" class="nav-link">
+          📚 API 文档
         </router-link>
       </div>
     </header>
