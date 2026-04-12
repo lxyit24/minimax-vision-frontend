@@ -6,14 +6,13 @@
           <h1>🖼️ MiniMax 图片理解</h1>
           <p>上传图片，AI 智能分析内容</p>
         </div>
-        <a 
-          href="/api/docs" 
-          target="_blank" 
+        <router-link 
+          to="/docs" 
           class="api-docs-btn"
           title="查看 API 文档"
         >
           📚 API 文档
-        </a>
+        </router-link>
       </div>
     </header>
 
