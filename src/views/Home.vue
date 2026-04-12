@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watchEffect, onMounted } from 'vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import AnalysisResult from '@/components/AnalysisResult.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
@@ -184,7 +184,13 @@ const loadChatFromStorage = () => {
 // 保存聊天记录到 localStorage
 const saveChatToStorage = () => {
   try {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages.value))
+    const data = JSON.stringify(chatMessages.value)
+    // 检查大小，避免超出 localStorage 限制（约5MB）
+    if (data.length > 4 * 1024 * 1024) {
+      console.warn('Chat data too large for localStorage, skipping save')
+      return
+    }
+    localStorage.setItem(CHAT_STORAGE_KEY, data)
   } catch (e) {
     console.error('Failed to save chat to localStorage:', e)
   }
@@ -196,7 +202,13 @@ onMounted(() => {
 })
 
 // 监听聊天消息变化，自动保存到 localStorage
-watch(chatMessages, saveChatToStorage, { deep: true })
+watchEffect(() => {
+  // 追踪 chatMessages.value 的依赖
+  const messages = chatMessages.value
+  if (messages.length > 0) {
+    saveChatToStorage()
+  }
+})
 
 const handleImageSelected = async (file: File, preview: string) => {
   selectedImage.value = file
