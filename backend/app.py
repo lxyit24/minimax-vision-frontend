@@ -20,9 +20,16 @@ app = Flask(__name__)
 CORS(app)
 
 # ============== 配置 ==============
+# 图片分析使用原始 MiniMax API (MCP)
 MINIMAX_API_KEY = os.environ.get('MINIMAX_API_KEY', '')
 MINIMAX_API_HOST = os.environ.get('MINIMAX_API_HOST', 'https://api.minimaxi.com')
-API_KEY = os.environ.get('API_KEY', '')  # 外部 API 密钥
+
+# 对话使用天行AI API (ai.1i.wiki)
+CHAT_API_KEY = os.environ.get('CHAT_API_KEY', 'sk-amvrgh8qgKxHIjidJVJUz3uvkqv9okEOu8NPtQIvQw55IHO3')
+CHAT_API_HOST = os.environ.get('CHAT_API_HOST', 'https://ai.1i.wiki/v1')
+
+# 外部 API 密钥（用于保护端点）
+API_KEY = os.environ.get('API_KEY', '')
 DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true'
 
 # ============== 简单内存限流 ==============
@@ -574,52 +581,27 @@ chat_max_history = 20  # 最多保留 20 条对话
 
 def call_minimax_chat(messages: list, session_id: str = None) -> str:
     """
-    调用 MiniMax 聊天 API (OpenAI 兼容格式)
-    messages: [{"role": "user/assistant", "content": "...", "image": "..."}, ...]
+    调用天行AI 聊天 API (OpenAI 兼容格式)
+    messages: [{"role": "user/assistant", "content": "..."}, ...]
+    注意: 图片已在前端通过 MCP 分析为文字，这里只处理纯文本
     """
     import urllib.request
     import urllib.error
     import ssl
     
-    if not MINIMAX_API_KEY:
-        raise Exception("MINIMAX_API_KEY not configured")
+    if not CHAT_API_KEY:
+        raise Exception("CHAT_API_KEY not configured")
     
     # 构建 API 请求
-    url = f"{MINIMAX_API_HOST}/chat/completions"
+    url = f"{CHAT_API_HOST}/chat/completions"
     
-    # 如果有图片，构建 vision 消息
+    # 构建纯文本消息（图片已转换为文字）
     formatted_messages = []
     for msg in messages:
         if isinstance(msg, dict):
             role = msg.get('role', 'user')
             content = msg.get('content', '')
-            image_data = msg.get('image')
-            
-            if image_data and role == 'user':
-                # 检查是否已经是完整的 data URL
-                if image_data.startswith('data:'):
-                    # 已经是完整 data URL，直接使用
-                    image_url = image_data
-                else:
-                    # 是纯 base64，添加前缀
-                    image_url = f"data:image/jpeg;base64,{image_data}"
-                
-                # 构建 vision 消息
-                if content:
-                    message_content = [
-                        {"type": "text", "text": content},
-                        {"type": "image_url", "image_url": {"url": image_url}}
-                    ]
-                else:
-                    message_content = [
-                        {"type": "image_url", "image_url": {"url": image_url}}
-                    ]
-                
-                formatted_messages.append({
-                    "role": "user",
-                    "content": message_content
-                })
-            else:
+            if content:  # 只添加有内容的消息
                 formatted_messages.append({"role": role, "content": content})
         else:
             formatted_messages.append({"role": "user", "content": str(msg)})
@@ -632,7 +614,7 @@ def call_minimax_chat(messages: list, session_id: str = None) -> str:
     }
     
     headers = {
-        "Authorization": f"Bearer {MINIMAX_API_KEY}",
+        "Authorization": f"Bearer {CHAT_API_KEY}",
         "Content-Type": "application/json"
     }
     
@@ -650,7 +632,10 @@ def call_minimax_chat(messages: list, session_id: str = None) -> str:
             result = json.loads(response.read().decode('utf-8'))
             
             if 'choices' in result and len(result['choices']) > 0:
-                return result['choices'][0]['message']['content']
+                message = result['choices'][0]['message']
+                # 天行AI 把内容放在 reasoning_content 而不是 content
+                content = message.get('content') or message.get('reasoning_content', '')
+                return content
             else:
                 raise Exception(f"Unexpected API response: {result}")
     
@@ -720,13 +705,45 @@ def chat():
             "content": system_prompt
         })
     
+    # 如果有图片，先用视觉分析后端分析图片
+    if image_data:
+        try:
+            # 保存图片到临时文件
+            import base64
+            # 处理 data URL 或纯 base64
+            if ',' in image_data:
+                img_base64 = image_data.split(',')[1]
+            else:
+                img_base64 = image_data
+            
+            img_bytes = base64.b64decode(img_base64)
+            temp_path = save_image(img_bytes)
+            
+            # 调用视觉分析 API
+            image_analysis = call_mcp_understand_image(
+                temp_path, 
+                "请详细描述这张图片的全部内容，包括：主要对象、背景、颜色、文字、布局等。"
+            )
+            
+            # 清理临时文件
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            
+            # 把图片分析结果拼到消息前面
+            user_message = f"【图片分析】{image_analysis}\n\n【用户消息】{user_message}"
+            
+        except Exception as e:
+            # 视觉分析失败，继续只用文字消息
+            user_message = f"【图片分析失败】{str(e)}\n\n【用户消息】{user_message}"
+    
     # 添加用户消息
     user_msg = {
         "role": "user", 
         "content": user_message
     }
-    if image_data:
-        user_msg["image"] = image_data
+    # 图片已转换为文字，不再传递 image 字段
+    # if image_data:
+    #     user_msg["image"] = image_data
     
     history.append(user_msg)
     
