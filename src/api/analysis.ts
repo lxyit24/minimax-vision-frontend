@@ -3,6 +3,15 @@ import axios from 'axios'
 // Direct backend URL to bypass Vite proxy issues
 const API_BASE = 'http://localhost:5001'
 
+// API Key for external access
+const API_KEY = 'minimax-vision-api-key-2024'
+
+// Helper to create headers
+const getHeaders = () => ({
+  'X-API-Key': API_KEY,
+  'Content-Type': 'application/json'
+})
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
@@ -26,6 +35,7 @@ export async function analyzeImage(file: File, prompt?: string): Promise<string>
   
   const response = await axios.post(`${API_BASE}/analyze`, formData, {
     headers: {
+      'X-API-Key': API_KEY,
       'Content-Type': 'multipart/form-data'
     },
     timeout: 120000 // 2 minutes timeout for image analysis
@@ -44,6 +54,7 @@ export async function sendChatMessage(
     image,
     session_id: sessionId || 'default'
   }, {
+    headers: getHeaders(),
     timeout: 120000 // 2 minutes timeout
   })
   
@@ -53,5 +64,7 @@ export async function sendChatMessage(
 export async function clearChat(sessionId?: string): Promise<void> {
   await axios.post(`${API_BASE}/chat/clear`, {
     session_id: sessionId || 'default'
+  }, {
+    headers: getHeaders()
   })
 }
