@@ -85,6 +85,7 @@
         <h2>九、联系我们</h2>
         <p>如果您对本隐私政策有任何疑问，请通过以下方式联系我们：</p>
         <ul>
+          <li>邮箱：<a href="mailto:lxyit24@qq.com">lxyit24@qq.com</a></li>
           <li>网站：<a href="https://vision.1i.wiki" target="_blank">https://vision.1i.wiki</a></li>
           <li>备案信息：<a href="https://beian.miit.gov.cn/" target="_blank">鲁ICP备2025137668号</a></li>
         </ul>
