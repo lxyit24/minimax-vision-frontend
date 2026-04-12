@@ -1158,4 +1158,169 @@ onUnmounted(() => {
     gap: 1.5rem;
   }
 }
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 2rem 1.25rem;
+  }
+  
+  .hero-section h1 {
+    font-size: 1.5rem;
+  }
+  
+  .hero-section p {
+    font-size: 0.9rem;
+  }
+  
+  .hero-stats {
+    justify-content: center;
+  }
+  
+  .stat-item {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+  }
+  
+  .main-content {
+    padding: 1.25rem 1rem;
+  }
+  
+  .section-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .endpoint-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 10px;
+  }
+  
+  .method {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    border-radius: 4px;
+  }
+  
+  .endpoint-path {
+    font-size: 0.9rem;
+    word-break: break-all;
+  }
+  
+  .endpoint-desc {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  
+  .code-block {
+    border-radius: 8px;
+    margin-top: 0.75rem;
+  }
+  
+  .code-header {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 8px 8px 0 0;
+  }
+  
+  .code-block pre {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 0 0 8px 8px;
+    overflow-x: auto;
+  }
+  
+  .copy-btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.7rem;
+  }
+  
+  .tab-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .feature-card {
+    padding: 1rem;
+  }
+  
+  .auth-note {
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section {
+    padding: 1.5rem 1rem;
+  }
+  
+  .hero-section h1 {
+    font-size: 1.25rem;
+  }
+  
+  .hero-badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .hero-stats {
+    gap: 0.75rem;
+  }
+  
+  .stat-item {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .main-content {
+    padding: 1rem 0.75rem 5rem;
+  }
+  
+  .section-title {
+    font-size: 1rem;
+  }
+  
+  .endpoint-card {
+    padding: 0.85rem;
+    margin-bottom: 0.85rem;
+  }
+  
+  .method {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .endpoint-path {
+    font-size: 0.85rem;
+  }
+  
+  .endpoint-desc {
+    font-size: 0.8rem;
+  }
+  
+  .code-block pre {
+    font-size: 0.75rem;
+    padding: 0.6rem;
+  }
+  
+  .auth-section {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  .auth-title {
+    font-size: 0.9rem;
+  }
+  
+  .auth-desc {
+    font-size: 0.8rem;
+  }
+}
 </style>
