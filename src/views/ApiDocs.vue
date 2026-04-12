@@ -1161,121 +1161,31 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .hero-section {
-    padding: 1.25rem 0.75rem;
+    padding: 0.75rem 0.5rem;
   }
   
-  .hero-section h1 {
-    font-size: 1.2rem;
-  }
-  
-  .hero-section p {
-    font-size: 0.85rem;
-  }
-  
-  .hero-stats {
-    justify-content: center;
-  }
-  
-  .stat-item {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.75rem;
-  }
-  
-  .main-content {
-    padding: 0.75rem 0.5rem 4rem;
-  }
-  
-  .section-title {
-    font-size: 1rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .endpoint-card {
-    padding: 0.75rem;
-    margin-bottom: 0.65rem;
-    border-radius: 8px;
-  }
-  
-  .method {
-    padding: 0.2rem 0.4rem;
+  .hero-badge {
     font-size: 0.65rem;
-    border-radius: 3px;
-  }
-  
-  .endpoint-path {
-    font-size: 0.85rem;
-    word-break: break-all;
-  }
-  
-  .endpoint-desc {
-    font-size: 0.8rem;
-    margin-top: 0.35rem;
-  }
-  
-  .code-block {
-    border-radius: 6px;
-    margin-top: 0.5rem;
-  }
-  
-  .code-header {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.7rem;
-    border-radius: 6px 6px 0 0;
-  }
-  
-  .code-block pre {
-    padding: 0.6rem;
-    font-size: 0.75rem;
-    border-radius: 0 0 6px 6px;
-    overflow-x: auto;
-  }
-  
-  .copy-btn {
-    padding: 0.25rem 0.4rem;
-    font-size: 0.65rem;
-  }
-  
-  .tab-btn {
-    padding: 0.4rem 0.6rem;
-    font-size: 0.75rem;
-  }
-  
-  .feature-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-  
-  .feature-card {
-    padding: 0.75rem;
-  }
-  
-  .auth-note {
-    padding: 0.6rem 0.75rem;
-    font-size: 0.8rem;
-    border-radius: 6px;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-section {
-    padding: 1rem 0.5rem;
+    padding: 0.15rem 0.35rem;
+    margin-bottom: 0.5rem;
   }
   
   .hero-section h1 {
     font-size: 1.1rem;
   }
   
-  .hero-badge {
-    font-size: 0.65rem;
-    padding: 0.2rem 0.4rem;
+  .hero-section p {
+    font-size: 0.8rem;
+    display: none; /* 手机上隐藏描述 */
   }
   
   .hero-stats {
+    justify-content: center;
     gap: 0.5rem;
   }
   
   .stat-item {
-    padding: 0.35rem 0.6rem;
+    padding: 0.3rem 0.6rem;
     font-size: 0.7rem;
   }
   
@@ -1285,42 +1195,111 @@ onUnmounted(() => {
   
   .section-title {
     font-size: 0.9rem;
-  }
-  
-  .endpoint-card {
-    padding: 0.6rem;
     margin-bottom: 0.5rem;
   }
   
+  .endpoint-card {
+    padding: 0.5rem;
+    margin-bottom: 0.4rem;
+    border-radius: 6px;
+  }
+  
   .method {
-    font-size: 0.6rem;
     padding: 0.15rem 0.35rem;
+    font-size: 0.6rem;
+    border-radius: 3px;
   }
   
   .endpoint-path {
     font-size: 0.8rem;
+    word-break: break-all;
   }
   
   .endpoint-desc {
     font-size: 0.75rem;
+    margin-top: 0.25rem;
+    display: none; /* 手机上隐藏描述 */
+  }
+  
+  .code-block {
+    border-radius: 5px;
+    margin-top: 0.35rem;
+  }
+  
+  .code-header {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.65rem;
+    border-radius: 5px 5px 0 0;
   }
   
   .code-block pre {
+    padding: 0.5rem;
     font-size: 0.7rem;
+    border-radius: 0 0 5px 5px;
+    overflow-x: auto;
+  }
+  
+  .copy-btn {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.6rem;
+  }
+  
+  .tab-btn {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.7rem;
+  }
+  
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .feature-card {
     padding: 0.5rem;
   }
   
-  .auth-section {
-    padding: 0.75rem;
-    border-radius: 6px;
+  .auth-note {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.75rem;
+    border-radius: 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-section h1 {
+    font-size: 1rem;
   }
   
-  .auth-title {
+  .hero-stats {
+    gap: 0.35rem;
+  }
+  
+  .stat-item {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.65rem;
+  }
+  
+  .section-title {
     font-size: 0.85rem;
   }
   
-  .auth-desc {
+  .endpoint-card {
+    padding: 0.4rem;
+    margin-bottom: 0.35rem;
+  }
+  
+  .method {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.3rem;
+  }
+  
+  .endpoint-path {
     font-size: 0.75rem;
+  }
+  
+  .code-block pre {
+    font-size: 0.65rem;
+    padding: 0.4rem;
   }
 }
 </style>

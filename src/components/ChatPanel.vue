@@ -556,103 +556,21 @@ textarea::placeholder {
 
 /* ===== 响应式 ===== */
 @media (max-width: 768px) {
+  .chat-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  
   .chat-messages {
-    padding: 0.5rem;
+    flex: 1;
+    padding: 0.4rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   
   .welcome-message {
-    padding: 1rem 0.75rem;
-  }
-  
-  .welcome-icon {
-    font-size: 2rem;
-  }
-  
-  .welcome-title {
-    font-size: 0.9rem;
-  }
-  
-  .welcome-desc {
-    font-size: 0.8rem;
-  }
-  
-  .message {
-    margin-bottom: 0.5rem;
-  }
-  
-  .message-content {
-    max-width: 88%;
-    padding: 0.5rem 0.7rem;
-    font-size: 0.875rem;
-    border-radius: 12px;
-  }
-  
-  .user-message .message-content {
-    border-radius: 12px 12px 4px 12px;
-  }
-  
-  .assistant-message .message-content {
-    border-radius: 12px 12px 12px 4px;
-  }
-  
-  .message-time {
-    font-size: 0.6rem;
-    margin-top: 0.15rem;
-  }
-  
-  .typing-indicator {
-    padding: 0.5rem 0.7rem;
-  }
-  
-  .typing-dot {
-    width: 5px;
-    height: 5px;
-  }
-  
-  .input-row {
-    gap: 0.4rem;
-    padding: 0.5rem;
-  }
-  
-  .attach-btn,
-  .send-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-  }
-  
-  textarea {
-    padding: 0.5rem 0.65rem;
-    font-size: 16px;
-    border-radius: 8px;
-    min-height: 36px;
-    max-height: 80px;
-  }
-  
-  .attached-image-preview {
-    max-width: 100px;
-    max-height: 100px;
-  }
-  
-  .remove-image {
-    width: 16px;
-    height: 16px;
-    font-size: 9px;
-    top: -5px;
-    right: -5px;
-  }
-}
-
-/* 小屏幕手机 - 更紧凑 */
-@media (max-width: 480px) {
-  .chat-messages {
-    padding: 0.4rem;
-  }
-  
-  .message-content {
-    max-width: 90%;
-    padding: 0.45rem 0.6rem;
-    font-size: 0.85rem;
+    padding: 0.75rem 0.5rem;
   }
   
   .welcome-icon {
@@ -665,20 +583,79 @@ textarea::placeholder {
   
   .welcome-desc {
     font-size: 0.75rem;
-    line-height: 1.3;
+  }
+  
+  .message {
+    margin-bottom: 0.4rem;
+  }
+  
+  .message-content {
+    max-width: 90%;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    border-radius: 10px;
+  }
+  
+  .user-message .message-content {
+    border-radius: 10px 10px 3px 10px;
+  }
+  
+  .assistant-message .message-content {
+    border-radius: 10px 10px 10px 3px;
+  }
+  
+  .message-time {
+    font-size: 0.55rem;
+    margin-top: 0.1rem;
+  }
+  
+  .typing-indicator {
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .typing-dot {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .input-area {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border);
+    padding: 0.5rem;
   }
   
   .input-row {
-    padding: 0.4rem;
+    gap: 0.35rem;
+  }
+  
+  .attach-btn,
+  .send-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    font-size: 1rem;
   }
   
   textarea {
+    padding: 0.4rem 0.55rem;
     font-size: 16px;
+    border-radius: 7px;
+    min-height: 34px;
+    max-height: 70px;
   }
   
   .attached-image-preview {
-    max-width: 80px;
-    max-height: 80px;
+    max-width: 70px;
+    max-height: 70px;
+    border-radius: 6px;
+  }
+  
+  .remove-image {
+    width: 14px;
+    height: 14px;
+    font-size: 8px;
+    top: -4px;
+    right: -4px;
   }
 }
 </style>
