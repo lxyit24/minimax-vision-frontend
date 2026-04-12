@@ -140,7 +140,8 @@ import { ref } from 'vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import AnalysisResult from '@/components/AnalysisResult.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
-import { analyzeImage, sendChatMessage, clearChat, ChatMessage } from '@/api/analysis'
+import { analyzeImage, sendChatMessage, clearChat } from '@/api/analysis'
+import type { ChatMessage } from '@/api/analysis'
 
 // Tab state
 const activeTab = ref<'analyze' | 'chat'>('analyze')

@@ -73,7 +73,6 @@
             type="file" 
             accept="image/*" 
             @change="handleImageAttach" 
-            ref="fileInput"
           />
           📷
         </label>
@@ -123,7 +122,6 @@ const props = defineProps<{
 const inputText = ref('')
 const attachedImage = ref<string>('')
 const attachedImageFile = ref<File | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
 const inputArea = ref<HTMLTextAreaElement | null>(null)
 const messagesContainer = ref<HTMLDivElement | null>(null)
 

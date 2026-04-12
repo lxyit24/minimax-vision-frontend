@@ -145,23 +145,23 @@ defineExpose({ reset })
 }
 
 .upload-area {
-  border: 2px dashed #ddd;
+  border: 2px dashed #334155;
   border-radius: 12px;
   padding: 3rem 2rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: #fafafa;
+  background: #1e293b;
 }
 
 .upload-area:hover {
   border-color: #667eea;
-  background: #f0f0ff;
+  background: #273449;
 }
 
 .upload-area.dragover {
   border-color: #667eea;
-  background: #eef0ff;
+  background: #2d3a52;
   transform: scale(1.02);
 }
 
@@ -172,7 +172,7 @@ defineExpose({ reset })
 
 .upload-placeholder p {
   margin: 0;
-  color: #666;
+  color: #94a3b8;
 }
 
 .upload-placeholder p:first-of-type {
@@ -183,7 +183,7 @@ defineExpose({ reset })
 .upload-hint {
   margin-top: 0.5rem !important;
   font-size: 0.9rem !important;
-  color: #999 !important;
+  color: #64748b !important;
 }
 
 .paste-hint {

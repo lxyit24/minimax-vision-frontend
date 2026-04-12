@@ -51,7 +51,7 @@ defineProps<{
 }
 
 .result-content {
-  background: #f8f9fa;
+  background: #1e293b;
   border-radius: 8px;
   padding: 1rem;
   overflow-x: auto;
@@ -64,12 +64,12 @@ defineProps<{
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 0.95rem;
   line-height: 1.6;
-  color: #333;
+  color: #f8fafc;
 }
 
 .empty {
   text-align: center;
   padding: 2rem;
-  color: #999;
+  color: #64748b;
 }
 </style>
