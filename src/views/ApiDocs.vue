@@ -4,7 +4,7 @@
     <header class="top-nav">
       <div class="nav-brand">
         <span class="brand-icon">🔮</span>
-        <span class="brand-name">MiniMax Vision</span>
+        <span class="brand-name">慧眼</span>
         <span class="brand-badge">API v2.0</span>
       </div>
       <div class="nav-links">

@@ -4,8 +4,8 @@
     <header class="top-nav">
       <div class="nav-brand">
         <span class="brand-icon">🔮</span>
-        <span class="brand-name">MiniMax Vision</span>
-        <span class="brand-badge">智能体</span>
+        <span class="brand-name">慧眼</span>
+        <span class="brand-badge">AI 助手</span>
       </div>
       <div class="nav-tabs">
         <button 
@@ -33,7 +33,7 @@
       <div class="hero-content">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          AI 智能体
+          慧眼
         </div>
         <h1>图片理解智能助手</h1>
         <p class="hero-desc">
@@ -115,7 +115,7 @@
       <div class="footer-content">
         <div class="footer-brand">
           <span class="brand-icon">🔮</span>
-          <span>MiniMax Vision 智能体</span>
+          <span>慧眼</span>
         </div>
         <p class="footer-desc">基于 MiniMax 多模态模型，支持图片分析和智能对话</p>
         <div class="footer-links">

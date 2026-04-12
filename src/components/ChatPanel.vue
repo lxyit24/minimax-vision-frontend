@@ -4,7 +4,7 @@
     <div class="chat-header">
       <div class="chat-title">
         <span class="chat-icon">🤖</span>
-        <span>MiniMax Vision 智能助手</span>
+        <span>慧眼 智能助手</span>
       </div>
       <div class="chat-actions">
         <button class="action-btn" @click="clearChat" title="清除对话">
@@ -18,7 +18,7 @@
       <!-- 欢迎消息 -->
       <div v-if="messages.length === 0" class="welcome-message">
         <div class="welcome-icon">👋</div>
-        <h3>欢迎使用 MiniMax Vision 智能助手</h3>
+        <h3>欢迎使用 慧眼 智能助手</h3>
         <p>我可以帮你分析图片内容，只需发送图片并描述你想了解的信息即可。</p>
         <div class="welcome-tips">
           <span class="tip">💡 发送图片 + 问题 = 分析图片</span>
