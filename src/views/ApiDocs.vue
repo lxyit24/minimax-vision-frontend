@@ -67,35 +67,6 @@
           </div>
         </section>
 
-        <!-- 快速开始 -->
-        <section class="doc-section" id="authentication">
-          <div class="section-header">
-            <div class="section-icon">🔐</div>
-            <div>
-              <h2>认证</h2>
-              <p class="section-desc">所有 API 请求都需要通过 X-API-Key Header 进行认证</p>
-            </div>
-          </div>
-          
-          <div class="code-block">
-            <div class="code-header">
-              <span class="code-lang">cURL</span>
-              <button class="copy-btn" @click="copyCode(authCode)">复制</button>
-            </div>
-            <pre><code>{{ authCode }}</code></pre>
-          </div>
-
-          <div class="info-cards">
-            <div class="info-card info">
-              <span class="info-icon">💡</span>
-              <div>
-                <strong>获取 API Key</strong>
-                <p>API Key 通过环境变量 <code>API_KEY</code> 配置，未设置则无需认证（仅开发环境）</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <!-- 端点列表 -->
         <section class="doc-section" id="endpoints">
           <div class="section-header">
@@ -244,14 +215,8 @@ const activeSection = ref('overview')
 const showToast = ref(false)
 const toastMessage = ref('')
 
-const authCode = `curl -X POST https://vision.1i.wiki/api/analyze \\
-  -H "X-API-Key: your-api-key" \\
-  -F "image=@photo.jpg" \\
-  -F "prompt=请描述这张图片"`
-
 const sections = [
   { id: 'overview', title: '概述', icon: '🚀' },
-  { id: 'authentication', title: '认证', icon: '🔐' },
   { id: 'endpoints', title: '端点', icon: '📡' },
   { id: 'response', title: '响应格式', icon: '📋' },
   { id: 'errors', title: '错误处理', icon: '⚠️' },
@@ -331,7 +296,6 @@ function getEndpointCode(endpoint: any, tab: string): string {
   const base = 'https://vision.1i.wiki'
   if (endpoint.path === '/api/analyze') {
     if (tab === 'curl') return `curl -X POST ${base}/api/analyze \\
-  -H "X-API-Key: your-key" \\
   -F "image=@photo.jpg" \\
   -F "prompt=请描述这张图片"`
     if (tab === 'python') return `import requests
@@ -340,8 +304,7 @@ files = {'image': open('photo.jpg', 'rb')}
 data = {'prompt': '请描述这张图片'}
 resp = requests.post(
     '${base}/api/analyze',
-    files=files, data=data,
-    headers={'X-API-Key': 'your-key'}
+    files=files, data=data
 )
 print(resp.json())`
     return `const formData = new FormData();
@@ -350,7 +313,6 @@ formData.append('prompt', '请描述这张图片');
 
 const resp = await fetch('${base}/api/analyze', {
   method: 'POST',
-  headers: { 'X-API-Key': 'your-key' },
   body: formData
 });
 const data = await resp.json();`
@@ -359,7 +321,6 @@ const data = await resp.json();`
   if (endpoint.path === '/api/analyze/base64') {
     if (tab === 'curl') return `curl -X POST ${base}/api/analyze/base64 \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-key" \\
   -d '{"image": "base64...", "prompt": "请描述"}'`
     if (tab === 'python') return `import base64, requests
 
@@ -368,40 +329,32 @@ with open('photo.jpg', 'rb') as f:
 
 resp = requests.post(
     '${base}/api/analyze/base64',
-    json={'image': b64, 'prompt': '请描述'},
-    headers={'X-API-Key': 'your-key'}
+    json={'image': b64, 'prompt': '请描述'}
 )
 print(resp.json())`
     return `const b64 = await fetchAsBase64(fileInput.files[0]);
 
 const resp = await fetch('${base}/api/analyze/base64', {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-API-Key': 'your-key'
-  },
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ image: b64, prompt: '请描述' })
 });`
   }
   
   if (tab === 'curl') return `curl -X POST ${base}/api/analyze/url \\
   -H "Content-Type: application/json" \\
-  -H "X-API-Key: your-key" \\
   -d '{"url": "https://example.com/photo.jpg", "prompt": "描述"}'`
   if (tab === 'python') return `import requests
 
 resp = requests.post(
     '${base}/api/analyze/url',
     json={'url': 'https://example.com/photo.jpg', 'prompt': '描述'},
-    headers={'Content-Type': 'application/json', 'X-API-Key': 'your-key'}
+    headers={'Content-Type': 'application/json'}
 )
 print(resp.json())`
   return `const resp = await fetch('${base}/api/analyze/url', {
   method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-API-Key': 'your-key'
-  },
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     url: 'https://example.com/photo.jpg',
     prompt: '描述'
@@ -425,17 +378,6 @@ function handleScroll() {
       activeSection.value = section.id
     }
   }
-}
-
-function copyCode(code: string) {
-  navigator.clipboard.writeText(code)
-  showToastMessage('已复制到剪贴板')
-}
-
-function showToastMessage(msg: string) {
-  toastMessage.value = msg
-  showToast.value = true
-  setTimeout(() => { showToast.value = false }, 2000)
 }
 
 onMounted(() => {
