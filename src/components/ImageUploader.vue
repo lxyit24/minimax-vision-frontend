@@ -193,31 +193,31 @@ defineExpose({ reset })
 /* ===== 响应式 ===== */
 @media (max-width: 768px) {
   .upload-area {
-    padding: 2rem 1rem;
+    padding: 1.5rem 0.75rem;
     border-radius: 10px;
   }
   
   .upload-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.75rem;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
   }
   
   .upload-placeholder p:first-of-type {
-    font-size: 1rem;
+    font-size: 0.9rem;
   }
   
   .upload-hint {
-    font-size: 0.8rem !important;
+    font-size: 0.75rem !important;
   }
   
   .preview-container {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
   }
   
   .image-preview {
     max-width: 100%;
-    max-height: 200px;
+    max-height: 160px;
   }
   
   .preview-info {
@@ -225,36 +225,36 @@ defineExpose({ reset })
   }
   
   .file-name {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     word-break: break-all;
   }
   
   .file-size {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
   
   .remove-btn {
-    font-size: 0.75rem;
-    padding: 0.4rem 0.75rem;
+    font-size: 0.7rem;
+    padding: 0.35rem 0.6rem;
   }
 }
 
 @media (max-width: 480px) {
   .upload-area {
-    padding: 1.5rem 0.75rem;
+    padding: 1rem 0.5rem;
   }
   
   .upload-icon {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
   
   .paste-hint {
-    font-size: 0.85rem !important;
+    font-size: 0.75rem !important;
   }
   
   .paste-toast {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.9rem;
   }
 }
 </style>

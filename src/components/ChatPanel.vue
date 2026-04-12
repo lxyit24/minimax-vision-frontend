@@ -557,102 +557,11 @@ textarea::placeholder {
 /* ===== 响应式 ===== */
 @media (max-width: 768px) {
   .chat-messages {
-    padding: 0.75rem;
-  }
-  
-  .welcome-message {
-    padding: 1.5rem 1rem;
-  }
-  
-  .welcome-icon {
-    font-size: 2.5rem;
-  }
-  
-  .welcome-title {
-    font-size: 1rem;
-  }
-  
-  .welcome-desc {
-    font-size: 0.85rem;
-  }
-  
-  .message {
-    margin-bottom: 0.75rem;
-  }
-  
-  .message-content {
-    max-width: 85%;
-    padding: 0.6rem 0.85rem;
-    font-size: 0.9rem;
-    border-radius: 14px;
-  }
-  
-  .user-message .message-content {
-    border-radius: 14px 14px 4px 14px;
-  }
-  
-  .assistant-message .message-content {
-    border-radius: 14px 14px 14px 4px;
-  }
-  
-  .message-time {
-    font-size: 0.65rem;
-    margin-top: 0.25rem;
-  }
-  
-  .typing-indicator {
-    padding: 0.6rem 0.85rem;
-  }
-  
-  .typing-dot {
-    width: 6px;
-    height: 6px;
-  }
-  
-  .input-row {
-    gap: 0.5rem;
-    padding: 0.75rem;
-  }
-  
-  .attach-btn,
-  .send-btn {
-    width: 38px;
-    height: 38px;
-    border-radius: 8px;
-  }
-  
-  textarea {
-    padding: 0.6rem 0.75rem;
-    font-size: 16px; /* 防止iOS缩放 */
-    border-radius: 8px;
-    min-height: 38px;
-    max-height: 100px;
-  }
-  
-  .attached-image-preview {
-    max-width: 120px;
-    max-height: 120px;
-  }
-  
-  .remove-image {
-    width: 18px;
-    height: 18px;
-    font-size: 10px;
-    top: -6px;
-    right: -6px;
-  }
-}
-
-/* 小屏幕手机 */
-@media (max-width: 480px) {
-  .chat-messages {
     padding: 0.5rem;
   }
   
-  .message-content {
-    max-width: 88%;
-    padding: 0.5rem 0.7rem;
-    font-size: 0.875rem;
+  .welcome-message {
+    padding: 1rem 0.75rem;
   }
   
   .welcome-icon {
@@ -665,11 +574,102 @@ textarea::placeholder {
   
   .welcome-desc {
     font-size: 0.8rem;
-    line-height: 1.4;
+  }
+  
+  .message {
+    margin-bottom: 0.5rem;
+  }
+  
+  .message-content {
+    max-width: 88%;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.875rem;
+    border-radius: 12px;
+  }
+  
+  .user-message .message-content {
+    border-radius: 12px 12px 4px 12px;
+  }
+  
+  .assistant-message .message-content {
+    border-radius: 12px 12px 12px 4px;
+  }
+  
+  .message-time {
+    font-size: 0.6rem;
+    margin-top: 0.15rem;
+  }
+  
+  .typing-indicator {
+    padding: 0.5rem 0.7rem;
+  }
+  
+  .typing-dot {
+    width: 5px;
+    height: 5px;
   }
   
   .input-row {
+    gap: 0.4rem;
     padding: 0.5rem;
+  }
+  
+  .attach-btn,
+  .send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+  }
+  
+  textarea {
+    padding: 0.5rem 0.65rem;
+    font-size: 16px;
+    border-radius: 8px;
+    min-height: 36px;
+    max-height: 80px;
+  }
+  
+  .attached-image-preview {
+    max-width: 100px;
+    max-height: 100px;
+  }
+  
+  .remove-image {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    top: -5px;
+    right: -5px;
+  }
+}
+
+/* 小屏幕手机 - 更紧凑 */
+@media (max-width: 480px) {
+  .chat-messages {
+    padding: 0.4rem;
+  }
+  
+  .message-content {
+    max-width: 90%;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  
+  .welcome-icon {
+    font-size: 1.75rem;
+  }
+  
+  .welcome-title {
+    font-size: 0.85rem;
+  }
+  
+  .welcome-desc {
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+  
+  .input-row {
+    padding: 0.4rem;
   }
   
   textarea {
@@ -677,8 +677,8 @@ textarea::placeholder {
   }
   
   .attached-image-preview {
-    max-width: 100px;
-    max-height: 100px;
+    max-width: 80px;
+    max-height: 80px;
   }
 }
 </style>

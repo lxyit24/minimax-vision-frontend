@@ -1161,15 +1161,15 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .hero-section {
-    padding: 2rem 1.25rem;
+    padding: 1.25rem 0.75rem;
   }
   
   .hero-section h1 {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
   }
   
   .hero-section p {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
   
   .hero-stats {
@@ -1177,150 +1177,150 @@ onUnmounted(() => {
   }
   
   .stat-item {
-    padding: 0.6rem 1rem;
-    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
   }
   
   .main-content {
-    padding: 1.25rem 1rem;
+    padding: 0.75rem 0.5rem 4rem;
   }
   
   .section-title {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
   }
   
   .endpoint-card {
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-radius: 10px;
+    padding: 0.75rem;
+    margin-bottom: 0.65rem;
+    border-radius: 8px;
   }
   
   .method {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.7rem;
-    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.65rem;
+    border-radius: 3px;
   }
   
   .endpoint-path {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     word-break: break-all;
   }
   
   .endpoint-desc {
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    margin-top: 0.35rem;
   }
   
   .code-block {
-    border-radius: 8px;
-    margin-top: 0.75rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
   }
   
   .code-header {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-    border-radius: 8px 8px 0 0;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.7rem;
+    border-radius: 6px 6px 0 0;
   }
   
   .code-block pre {
-    padding: 0.75rem;
-    font-size: 0.8rem;
-    border-radius: 0 0 8px 8px;
+    padding: 0.6rem;
+    font-size: 0.75rem;
+    border-radius: 0 0 6px 6px;
     overflow-x: auto;
   }
   
   .copy-btn {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.7rem;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.65rem;
   }
   
   .tab-btn {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
   }
   
   .feature-grid {
     grid-template-columns: 1fr;
-    gap: 1rem;
+    gap: 0.75rem;
   }
   
   .feature-card {
-    padding: 1rem;
+    padding: 0.75rem;
   }
   
   .auth-note {
-    padding: 0.75rem 1rem;
-    font-size: 0.85rem;
-    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
   }
 }
 
 @media (max-width: 480px) {
   .hero-section {
-    padding: 1.5rem 1rem;
+    padding: 1rem 0.5rem;
   }
   
   .hero-section h1 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
   }
   
   .hero-badge {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
-  }
-  
-  .hero-stats {
-    gap: 0.75rem;
-  }
-  
-  .stat-item {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-  }
-  
-  .main-content {
-    padding: 1rem 0.75rem 5rem;
-  }
-  
-  .section-title {
-    font-size: 1rem;
-  }
-  
-  .endpoint-card {
-    padding: 0.85rem;
-    margin-bottom: 0.85rem;
-  }
-  
-  .method {
     font-size: 0.65rem;
     padding: 0.2rem 0.4rem;
   }
   
-  .endpoint-path {
-    font-size: 0.85rem;
+  .hero-stats {
+    gap: 0.5rem;
   }
   
-  .endpoint-desc {
-    font-size: 0.8rem;
+  .stat-item {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.7rem;
   }
   
-  .code-block pre {
-    font-size: 0.75rem;
-    padding: 0.6rem;
+  .main-content {
+    padding: 0.5rem 0.35rem 4rem;
   }
   
-  .auth-section {
-    padding: 1rem;
-    border-radius: 8px;
-  }
-  
-  .auth-title {
+  .section-title {
     font-size: 0.9rem;
   }
   
-  .auth-desc {
+  .endpoint-card {
+    padding: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .method {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.35rem;
+  }
+  
+  .endpoint-path {
     font-size: 0.8rem;
+  }
+  
+  .endpoint-desc {
+    font-size: 0.75rem;
+  }
+  
+  .code-block pre {
+    font-size: 0.7rem;
+    padding: 0.5rem;
+  }
+  
+  .auth-section {
+    padding: 0.75rem;
+    border-radius: 6px;
+  }
+  
+  .auth-title {
+    font-size: 0.85rem;
+  }
+  
+  .auth-desc {
+    font-size: 0.75rem;
   }
 }
 </style>
