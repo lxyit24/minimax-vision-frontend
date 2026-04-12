@@ -5,7 +5,21 @@
       <div class="nav-brand">
         <span class="brand-icon">🔮</span>
         <span class="brand-name">MiniMax Vision</span>
-        <span class="brand-badge">图片理解</span>
+        <span class="brand-badge">智能体</span>
+      </div>
+      <div class="nav-tabs">
+        <button 
+          :class="['nav-tab', { active: activeTab === 'analyze' }]"
+          @click="activeTab = 'analyze'"
+        >
+          📊 图片分析
+        </button>
+        <button 
+          :class="['nav-tab', { active: activeTab === 'chat' }]"
+          @click="activeTab = 'chat'"
+        >
+          💬 AI 对话
+        </button>
       </div>
       <div class="nav-actions">
         <router-link to="/docs" class="nav-link">
@@ -19,92 +33,80 @@
       <div class="hero-content">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          AI 驱动的图片理解
+          AI 智能体
         </div>
-        <h1>智能图片分析<br/>只需上传即可</h1>
+        <h1>图片理解智能助手</h1>
         <p class="hero-desc">
-          基于 MiniMax 先进的多模态模型，自动识别图片中的物体、场景、文字和语义理解。支持自定义提示词，获得精准的分析结果。
+          基于 MiniMax 多模态模型的 AI 智能体，可以分析图片内容并与你进行智能对话。切换到对话模式，体验更自然的交互方式。
         </p>
-        <div class="hero-features">
-          <span class="feature-tag">🌐 多语言支持</span>
-          <span class="feature-tag">⚡ 快速响应</span>
-          <span class="feature-tag">🔒 安全可靠</span>
-        </div>
-      </div>
-      <div class="hero-visual">
-        <div class="floating-card">
-          <div class="card-icon">🖼️</div>
-          <span>上传图片</span>
-        </div>
-        <div class="floating-card">
-          <div class="card-icon">✨</div>
-          <span>AI 分析</span>
-        </div>
-        <div class="floating-card">
-          <div class="card-icon">📝</div>
-          <span>获取结果</span>
-        </div>
       </div>
     </section>
 
     <!-- 主内容区 -->
     <main class="main-content">
-      <!-- 上传区域 -->
-      <section class="upload-section">
-        <div class="section-header">
-          <h2>📤 上传图片</h2>
-          <p class="section-desc">支持 JPG、PNG、GIF、WebP 格式，最大 10MB</p>
+      <!-- ========== 图片分析模式 ========== -->
+      <section v-show="activeTab === 'analyze'" class="tab-content">
+        <div class="upload-section">
+          <div class="section-header">
+            <h2>📤 上传图片</h2>
+            <p class="section-desc">支持 JPG、PNG、GIF、WebP 格式，最大 10MB</p>
+          </div>
+          <ImageUploader @image-selected="handleImageSelected" />
         </div>
-        <ImageUploader @image-selected="handleImageSelected" />
-      </section>
 
-      <!-- 提示词输入 -->
-      <section class="prompt-section">
-        <div class="section-header">
-          <h2>💬 自定义提示词</h2>
-          <p class="section-desc">指定你想从图片中获取什么信息</p>
+        <div class="prompt-section">
+          <div class="section-header">
+            <h2>💬 自定义提示词</h2>
+            <p class="section-desc">指定你想从图片中获取什么信息</p>
+          </div>
+          <div class="prompt-card">
+            <textarea 
+              v-model="customPrompt"
+              placeholder="例如：请详细描述这张图片中的场景、人物和物品..."
+              rows="3"
+            ></textarea>
+            <div class="prompt-footer">
+              <span class="prompt-hint">
+                💡 可与图片一起发送，获得精准分析
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="prompt-card">
-          <textarea 
-            v-model="customPrompt"
-            placeholder="例如：请详细描述这张图片中的场景、人物和物品..."
-            rows="3"
-            @keydown.ctrl.c="copyResult"
-          ></textarea>
-          <div class="prompt-footer">
-            <span class="prompt-hint">
-              💡 按 <kbd>Ctrl</kbd>+<kbd>C</kbd> 复制分析结果
-            </span>
-            <button class="copy-btn" @click="copyResult" :disabled="!analysisResult">
+
+        <div v-if="selectedImage" class="preview-section">
+          <div class="section-header">
+            <h2>📷 图片预览</h2>
+            <span class="file-info">{{ selectedImage.name }} ({{ formatSize(selectedImage.size) }})</span>
+          </div>
+          <div class="image-preview">
+            <img :src="previewUrl" alt="Preview" />
+          </div>
+        </div>
+
+        <div v-if="analysisResult || isAnalyzing" class="result-section">
+          <div class="section-header">
+            <h2>📝 分析结果</h2>
+            <button v-if="analysisResult" class="copy-btn" @click="copyResult">
               📋 复制结果
             </button>
           </div>
+          <AnalysisResult 
+            :result="analysisResult" 
+            :is-loading="isAnalyzing" 
+          />
         </div>
       </section>
 
-      <!-- 图片预览 -->
-      <section v-if="selectedImage" class="preview-section">
-        <div class="section-header">
-          <h2>📷 图片预览</h2>
-          <span class="file-info">{{ selectedImage.name }} ({{ formatSize(selectedImage.size) }})</span>
+      <!-- ========== AI 对话模式 ========== -->
+      <section v-show="activeTab === 'chat'" class="tab-content chat-tab">
+        <div class="chat-wrapper">
+          <ChatPanel 
+            :messages="chatMessages"
+            :is-loading="isChatLoading"
+            @send-message="handleSendMessage"
+            @clear-chat="handleClearChat"
+          />
         </div>
-        <div class="image-preview">
-          <img :src="previewUrl" alt="Preview" />
-        </div>
-      </section>
-
-      <!-- 分析结果 -->
-      <section v-if="analysisResult || isAnalyzing" class="result-section">
-        <div class="section-header">
-          <h2>📝 分析结果</h2>
-          <button v-if="analysisResult" class="copy-btn" @click="copyResult">
-            📋 复制结果
-          </button>
-        </div>
-        <AnalysisResult 
-          :result="analysisResult" 
-          :is-loading="isAnalyzing" 
-        />
       </section>
     </main>
 
@@ -113,9 +115,9 @@
       <div class="footer-content">
         <div class="footer-brand">
           <span class="brand-icon">🔮</span>
-          <span>MiniMax Vision API</span>
+          <span>MiniMax Vision 智能体</span>
         </div>
-        <p class="footer-desc">基于 MiniMax 多模态模型构建，支持文件上传、Base64、URL 多种分析方式</p>
+        <p class="footer-desc">基于 MiniMax 多模态模型，支持图片分析和智能对话</p>
         <div class="footer-links">
           <router-link to="/docs">API 文档</router-link>
           <span class="divider">|</span>
@@ -137,13 +139,25 @@
 import { ref } from 'vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import AnalysisResult from '@/components/AnalysisResult.vue'
-import { analyzeImage } from '@/api/analysis'
+import ChatPanel from '@/components/ChatPanel.vue'
+import { analyzeImage, sendChatMessage, clearChat, ChatMessage } from '@/api/analysis'
 
+// Tab state
+const activeTab = ref<'analyze' | 'chat'>('analyze')
+
+// Analyze mode state
 const selectedImage = ref<File | null>(null)
 const previewUrl = ref<string>('')
 const analysisResult = ref<string>('')
 const isAnalyzing = ref(false)
 const customPrompt = ref<string>('')
+
+// Chat mode state
+const chatMessages = ref<ChatMessage[]>([])
+const isChatLoading = ref(false)
+const chatSessionId = ref('default')
+
+// Toast
 const showCopyToast = ref(false)
 
 const handleImageSelected = async (file: File, preview: string) => {
@@ -160,6 +174,50 @@ const handleImageSelected = async (file: File, preview: string) => {
     analysisResult.value = `分析失败: ${error}`
   } finally {
     isAnalyzing.value = false
+  }
+}
+
+const handleSendMessage = async (message: string, image?: string) => {
+  // 添加用户消息
+  chatMessages.value.push({
+    role: 'user',
+    content: message,
+    image
+  })
+  
+  isChatLoading.value = true
+  
+  try {
+    const response = await sendChatMessage(message, image, chatSessionId.value)
+    
+    if (response.success) {
+      // 添加助手回复
+      chatMessages.value.push({
+        role: 'assistant',
+        content: response.response
+      })
+    } else {
+      chatMessages.value.push({
+        role: 'assistant',
+        content: `抱歉，发生了错误: ${response.error}`
+      })
+    }
+  } catch (error) {
+    chatMessages.value.push({
+      role: 'assistant',
+      content: `网络错误: ${error}`
+    })
+  } finally {
+    isChatLoading.value = false
+  }
+}
+
+const handleClearChat = async () => {
+  try {
+    await clearChat(chatSessionId.value)
+    chatMessages.value = []
+  } catch (error) {
+    console.error('Clear chat error:', error)
   }
 }
 
@@ -214,7 +272,7 @@ const formatSize = (bytes: number): string => {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 2rem;
-  background: rgba(15, 23, 42, 0.9);
+  background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
@@ -244,6 +302,34 @@ const formatSize = (bytes: number): string => {
   font-weight: 600;
 }
 
+.nav-tabs {
+  display: flex;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  padding: 0.25rem;
+  border-radius: 10px;
+}
+
+.nav-tab {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.nav-tab:hover {
+  color: var(--text-primary);
+}
+
+.nav-tab.active {
+  background: var(--primary);
+  color: white;
+}
+
 .nav-actions {
   display: flex;
   gap: 1rem;
@@ -265,18 +351,15 @@ const formatSize = (bytes: number): string => {
 
 /* ===== Hero Section ===== */
 .hero {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  padding: 4rem 3rem;
+  padding: 2rem 3rem;
   background: var(--bg-dark);
-  min-height: 400px;
+  border-bottom: 1px solid var(--border);
 }
 
 .hero-content {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
 }
 
 .hero-badge {
@@ -289,8 +372,7 @@ const formatSize = (bytes: number): string => {
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
-  margin-bottom: 1.5rem;
-  width: fit-content;
+  margin-bottom: 1rem;
 }
 
 .badge-dot {
@@ -307,106 +389,43 @@ const formatSize = (bytes: number): string => {
 }
 
 .hero h1 {
-  font-size: 2.8rem;
+  font-size: 2rem;
   font-weight: 800;
   color: var(--text-primary);
-  margin: 0 0 1rem;
-  line-height: 1.2;
+  margin: 0 0 0.75rem;
 }
 
 .hero-desc {
   color: var(--text-secondary);
-  font-size: 1.1rem;
-  line-height: 1.7;
-  margin: 0 0 1.5rem;
-  max-width: 500px;
-}
-
-.hero-features {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.feature-tag {
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  border: 1px solid var(--border);
-}
-
-.hero-visual {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-}
-
-.floating-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 2rem 1.5rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  animation: float 3s ease-in-out infinite;
-  min-width: 120px;
-}
-
-.floating-card:nth-child(2) {
-  animation-delay: 0.5s;
-  transform: translateY(-10px);
-}
-
-.floating-card:nth-child(3) {
-  animation-delay: 1s;
-  transform: translateY(-20px);
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.floating-card:nth-child(2) {
-  animation: float2 3s ease-in-out infinite;
-  animation-delay: 0.5s;
-}
-
-@keyframes float2 {
-  0%, 100% { transform: translateY(-10px); }
-  50% { transform: translateY(-20px); }
-}
-
-.floating-card:nth-child(3) {
-  animation: float3 3s ease-in-out infinite;
-  animation-delay: 1s;
-}
-
-@keyframes float3 {
-  0%, 100% { transform: translateY(-20px); }
-  50% { transform: translateY(-30px); }
-}
-
-.card-icon {
-  font-size: 2rem;
-}
-
-.floating-card span {
-  color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* ===== 主内容区 ===== */
 .main-content {
   padding: 2rem 3rem 4rem;
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
+  min-height: 60vh;
+}
+
+.tab-content {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.chat-tab {
+  height: calc(100vh - 300px);
+  min-height: 500px;
+}
+
+.chat-wrapper {
+  height: 100%;
 }
 
 .section-header {
@@ -493,39 +512,6 @@ const formatSize = (bytes: number): string => {
   font-size: 0.8rem;
 }
 
-kbd {
-  background: var(--bg-card);
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  border: 1px solid var(--border);
-}
-
-.copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.copy-btn:hover:not(:disabled) {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-}
-
-.copy-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 /* ===== Image Preview ===== */
 .image-preview {
   display: flex;
@@ -542,11 +528,32 @@ kbd {
   object-fit: contain;
 }
 
+/* ===== Copy Button ===== */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
 /* ===== Footer ===== */
 .footer {
   background: var(--bg-dark);
   border-top: 1px solid var(--border);
-  padding: 3rem 2rem;
+  padding: 2rem;
 }
 
 .footer-content {
@@ -561,16 +568,13 @@ kbd {
   gap: 0.5rem;
   color: var(--text-primary);
   font-weight: 600;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .footer-desc {
   color: var(--text-muted);
   font-size: 0.85rem;
   margin: 0 0 1rem;
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .footer-links {
@@ -622,53 +626,33 @@ kbd {
 }
 
 /* ===== 响应式 ===== */
-@media (max-width: 900px) {
-  .hero {
-    grid-template-columns: 1fr;
-    padding: 2rem;
-    text-align: center;
+@media (max-width: 768px) {
+  .top-nav {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
   }
   
-  .hero-content {
-    align-items: center;
-  }
-  
-  .hero-desc {
-    max-width: 100%;
-  }
-  
-  .hero-features {
+  .nav-tabs {
+    order: 3;
+    width: 100%;
     justify-content: center;
   }
   
-  .hero-visual {
-    margin-top: 1rem;
+  .hero {
+    padding: 1.5rem 1rem;
+  }
+  
+  .hero h1 {
+    font-size: 1.5rem;
   }
   
   .main-content {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 600px) {
-  .hero h1 {
-    font-size: 2rem;
+    padding: 1.5rem 1rem 3rem;
   }
   
-  .hero-visual {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .floating-card {
-    padding: 1.5rem 1rem;
-    min-width: 100px;
-  }
-  
-  .floating-card:nth-child(2),
-  .floating-card:nth-child(3) {
-    transform: none;
-    animation: none;
+  .chat-tab {
+    min-height: 450px;
   }
 }
 </style>

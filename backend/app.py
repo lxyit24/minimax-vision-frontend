@@ -567,6 +567,236 @@ def analyze_url():
             os.remove(temp_path)
 
 
+# ============== 对话历史存储 ==============
+chat_histories = {}  # {session_id: [{"role": "user/assistant", "content": "...", "image": "..."}, ...]}
+chat_max_history = 20  # 最多保留 20 条对话
+
+
+def call_minimax_chat(messages: list, session_id: str = None) -> str:
+    """
+    调用 MiniMax 聊天 API (OpenAI 兼容格式)
+    messages: [{"role": "user/assistant", "content": "...", "image": "..."}, ...]
+    """
+    import urllib.request
+    import urllib.error
+    import ssl
+    
+    if not MINIMAX_API_KEY:
+        raise Exception("MINIMAX_API_KEY not configured")
+    
+    # 构建 API 请求
+    url = f"{MINIMAX_API_HOST}/chat/completions"
+    
+    # 如果有图片，构建 vision 消息
+    formatted_messages = []
+    for msg in messages:
+        if isinstance(msg, dict):
+            role = msg.get('role', 'user')
+            content = msg.get('content', '')
+            image_data = msg.get('image')
+            
+            if image_data and role == 'user':
+                # 有图片的消息
+                formatted_messages.append({
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": content},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}}
+                    ]
+                })
+            else:
+                formatted_messages.append({"role": role, "content": content})
+        else:
+            formatted_messages.append({"role": "user", "content": str(msg)})
+    
+    payload = {
+        "model": "MiniMax-M2.7-highspeed",
+        "messages": formatted_messages,
+        "max_tokens": 2000,
+        "temperature": 0.7
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {MINIMAX_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    ctx = ssl.create_default_context()
+    
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode('utf-8'),
+            headers=headers,
+            method='POST'
+        )
+        
+        with urllib.request.urlopen(req, context=ctx, timeout=120) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            
+            if 'choices' in result and len(result['choices']) > 0:
+                return result['choices'][0]['message']['content']
+            else:
+                raise Exception(f"Unexpected API response: {result}")
+    
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8') if e.fp else str(e)
+        raise Exception(f"API Error {e.code}: {error_body}")
+    except Exception as e:
+        raise Exception(f"Chat API Error: {str(e)}")
+
+
+@app.route('/api/chat', methods=['POST'])
+@require_api_key
+def chat():
+    """
+    智能对话接口
+    支持多轮对话和图片分析
+    
+    请求体:
+    {
+        "message": "用户消息",
+        "image": "base64图片(可选)",
+        "session_id": "会话ID(可选，默认新建)",
+        "prompt": "系统提示词(可选)"
+    }
+    
+    响应:
+    {
+        "success": true,
+        "response": "AI回复",
+        "session_id": "会话ID",
+        "history": [...]  # 完整对话历史
+    }
+    """
+    ip = request.remote_addr
+    
+    if not check_rate_limit(ip, max_requests=30):  # 对话接口更严格的限流
+        return jsonify({
+            "success": False,
+            "error": "Rate limit exceeded. Max 30 requests per minute.",
+            "code": "RATE_LIMITED"
+        }), 429
+    
+    data = request.get_json()
+    
+    if not data or 'message' not in data:
+        return jsonify({
+            "success": False,
+            "error": "Missing 'message' field",
+            "code": "INVALID_REQUEST"
+        }), 400
+    
+    user_message = data['message']
+    image_data = data.get('image')  # 可选的 base64 图片
+    session_id = data.get('session_id', 'default')
+    system_prompt = data.get('prompt', '你是一个智能图片分析助手，名叫 MiniMax Vision。用户会发送图片或文字消息，你可以分析图片内容并回答用户的问题。你专业、友好、乐于助人。如果用户发送图片，请仔细分析图片内容并给出详细描述。如果用户只是问问题，直接回答即可。')
+    
+    # 获取或创建会话历史
+    if session_id not in chat_histories:
+        chat_histories[session_id] = []
+    
+    history = chat_histories[session_id]
+    
+    # 如果有系统提示词且是新建会话，添加系统消息
+    if len(history) == 0 and system_prompt:
+        history.append({
+            "role": "system",
+            "content": system_prompt
+        })
+    
+    # 添加用户消息
+    user_msg = {
+        "role": "user", 
+        "content": user_message
+    }
+    if image_data:
+        user_msg["image"] = image_data
+    
+    history.append(user_msg)
+    
+    # 限制历史长度
+    while len(history) > chat_max_history:
+        # 保留 system 消息
+        if history[0]["role"] == "system":
+            history = [history[0]] + history[2:]
+        else:
+            history = history[2:]
+    
+    try:
+        # 调用 MiniMax API
+        response_text = call_minimax_chat(history, session_id)
+        
+        # 添加助手回复到历史
+        history.append({
+            "role": "assistant",
+            "content": response_text
+        })
+        
+        log_request(ip, '/api/chat', 200)
+        
+        return jsonify({
+            "success": True,
+            "response": response_text,
+            "session_id": session_id,
+            "history": [
+                {"role": msg["role"], "content": msg["content"], "image": msg.get("image")}
+                for msg in history if msg["role"] != "system"
+            ]
+        })
+    
+    except Exception as e:
+        log_request(ip, '/api/chat', 500)
+        # 出错时移除用户消息
+        if user_msg in history:
+            history.remove(user_msg)
+        
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "code": "CHAT_ERROR"
+        }), 500
+
+
+@app.route('/api/chat/history', methods=['GET'])
+@require_api_key
+def get_chat_history():
+    """获取对话历史"""
+    session_id = request.args.get('session_id', 'default')
+    
+    if session_id not in chat_histories:
+        return jsonify({
+            "success": True,
+            "session_id": session_id,
+            "history": []
+        })
+    
+    return jsonify({
+        "success": True,
+        "session_id": session_id,
+        "history": [
+            {"role": msg["role"], "content": msg["content"]}
+            for msg in chat_histories[session_id] if msg["role"] != "system"
+        ]
+    })
+
+
+@app.route('/api/chat/clear', methods=['POST'])
+@require_api_key
+def clear_chat():
+    """清除对话历史"""
+    data = request.get_json() or {}
+    session_id = data.get('session_id', 'default')
+    
+    if session_id in chat_histories:
+        chat_histories[session_id] = []
+    
+    return jsonify({
+        "success": True,
+        "message": f"Session {session_id} cleared"
+    })
+
+
 # ============== 启动 ==============
 
 if __name__ == '__main__':
@@ -582,8 +812,11 @@ if __name__ == '__main__':
     print("    POST /api/analyze         - Upload image file")
     print("    POST /api/analyze/base64  - Base64 image")
     print("    POST /api/analyze/url     - Image URL")
-    print("    GET  /api/health          - Health check")
-    print("    GET  /api/docs            - API documentation")
+    print("    POST /api/chat            - AI 对话 (NEW!)")
+    print("    GET  /api/chat/history   - 获取对话历史")
+    print("    POST /api/chat/clear     - 清除对话历史")
+    print("    GET  /api/health         - Health check")
+    print("    GET  /api/docs           - API documentation")
     print()
     print("=" * 60)
     
