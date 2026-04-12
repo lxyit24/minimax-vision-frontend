@@ -271,8 +271,6 @@ const activeCodeTab = reactive<Record<string, string>>({
 })
 
 const errors = [
-  { code: 'MISSING_API_KEY', status: '401', level: 'error', desc: '未提供 API 密钥' },
-  { code: 'INVALID_API_KEY', status: '403', level: 'error', desc: 'API 密钥无效' },
   { code: 'RATE_LIMITED', status: '429', level: 'warning', desc: '请求过于频繁（60次/分钟/IP）' },
   { code: 'MISSING_IMAGE', status: '400', level: 'error', desc: '未提供图片数据' },
   { code: 'INVALID_IMAGE', status: '400', level: 'error', desc: '图片格式无效或文件损坏' },
