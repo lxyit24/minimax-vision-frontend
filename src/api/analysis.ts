@@ -3,14 +3,7 @@ import axios from 'axios'
 // Use relative URL - nginx should proxy /api/* to backend on port 5001
 const API_BASE = ''
 
-// API Key for external access
-const API_KEY = 'minimax-vision-api-key-2024'
-
-// Helper to create headers
-const getHeaders = () => ({
-  'X-API-Key': API_KEY,
-  'Content-Type': 'application/json'
-})
+// API Key is now managed server-side via nginx, not exposed in frontend
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -35,7 +28,6 @@ export async function analyzeImage(file: File, prompt?: string): Promise<string>
   
   const response = await axios.post(`${API_BASE}/api/analyze`, formData, {
     headers: {
-      'X-API-Key': API_KEY,
       'Content-Type': 'multipart/form-data'
     },
     timeout: 120000 // 2 minutes timeout for image analysis
@@ -52,9 +44,9 @@ export async function sendChatMessage(
   const response = await axios.post(`${API_BASE}/api/chat`, {
     message,
     image,
-    session_id: sessionId || 'default'
+    session_id: sessionId || undefined
   }, {
-    headers: getHeaders(),
+    headers: {},
     timeout: 120000 // 2 minutes timeout
   })
   
@@ -63,8 +55,8 @@ export async function sendChatMessage(
 
 export async function clearChat(sessionId?: string): Promise<void> {
   await axios.post(`${API_BASE}/api/chat/clear`, {
-    session_id: sessionId || 'default'
+    session_id: sessionId || undefined
   }, {
-    headers: getHeaders()
+    headers: {}
   })
 }
