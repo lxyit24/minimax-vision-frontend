@@ -33,7 +33,7 @@ export async function analyzeImage(file: File, prompt?: string): Promise<string>
     formData.append('prompt', prompt)
   }
   
-  const response = await axios.post(`${API_BASE}/analyze`, formData, {
+  const response = await axios.post(`${API_BASE}/api/analyze`, formData, {
     headers: {
       'X-API-Key': API_KEY,
       'Content-Type': 'multipart/form-data'
