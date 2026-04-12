@@ -121,7 +121,9 @@
         <div class="footer-links">
           <router-link to="/docs">API 文档</router-link>
           <span class="divider">|</span>
-          <a href="https://github.com/lxyit24/minimax-vision-frontend" target="_blank">GitHub</a>
+          <span>Copyright © 2023-2026 六仙云</span>
+          <span class="divider">|</span>
+          <a href="https://beian.miit.gov.cn/" target="_blank">鲁ICP备2025137668号</a>
         </div>
       </div>
     </footer>
