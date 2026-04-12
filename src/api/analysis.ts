@@ -49,7 +49,7 @@ export async function sendChatMessage(
   image?: string,
   sessionId?: string
 ): Promise<ChatResponse> {
-  const response = await axios.post(`${API_BASE}/chat`, {
+  const response = await axios.post(`${API_BASE}/api/chat`, {
     message,
     image,
     session_id: sessionId || 'default'
@@ -62,7 +62,7 @@ export async function sendChatMessage(
 }
 
 export async function clearChat(sessionId?: string): Promise<void> {
-  await axios.post(`${API_BASE}/chat/clear`, {
+  await axios.post(`${API_BASE}/api/chat/clear`, {
     session_id: sessionId || 'default'
   }, {
     headers: getHeaders()
