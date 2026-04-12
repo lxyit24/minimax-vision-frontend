@@ -679,32 +679,166 @@ const formatSize = (bytes: number): string => {
 
 /* ===== 响应式 ===== */
 @media (max-width: 768px) {
+  /* 导航栏 */
   .top-nav {
     flex-wrap: wrap;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .nav-brand {
+    font-size: 1rem;
   }
   
   .nav-tabs {
     order: 3;
     width: 100%;
     justify-content: center;
+    gap: 0.25rem;
   }
   
+  .nav-tab {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  /* Hero */
   .hero {
-    padding: 1.5rem 1rem;
+    padding: 1.25rem 1rem;
   }
   
   .hero h1 {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
+  }
+  
+  .hero-desc {
+    font-size: 0.9rem;
+  }
+  
+  .hero-badge {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+  }
+  
+  /* 主内容 */
+  .main-content {
+    padding: 1rem 0.75rem 5rem;
+  }
+  
+  /* 卡片 */
+  .upload-section,
+  .prompt-section,
+  .preview-section,
+  .result-section {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .section-header h2 {
+    font-size: 1rem;
+  }
+  
+  /* 分析模式 */
+  .analyze-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .preview-section {
+    order: -1;
+  }
+  
+  .preview-image {
+    max-height: 200px;
+  }
+  
+  .result-text {
+    max-height: 250px;
+    font-size: 0.9rem;
+  }
+  
+  /* 对话模式 */
+  .chat-tab {
+    min-height: auto;
+    height: calc(100vh - 280px);
+  }
+  
+  /* 提示词输入 */
+  .prompt-card {
+    border-radius: 8px;
+  }
+  
+  textarea.prompt-input {
+    font-size: 16px; /* 防止iOS缩放 */
+    min-height: 80px;
+  }
+  
+  /* 复制按钮 */
+  .copy-btn {
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+  }
+  
+  /* 底部 */
+  .footer {
+    padding: 1rem;
+    font-size: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+}
+
+/* 小屏幕手机 */
+@media (max-width: 480px) {
+  .hero {
+    padding: 1rem 0.75rem;
+  }
+  
+  .hero h1 {
+    font-size: 1.2rem;
   }
   
   .main-content {
-    padding: 1.5rem 1rem 3rem;
+    padding: 0.75rem 0.5rem 6rem;
+  }
+  
+  .upload-section,
+  .prompt-section,
+  .preview-section,
+  .result-section {
+    padding: 0.75rem;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+  }
+  
+  .analyze-grid {
+    gap: 0.75rem;
+  }
+  
+  .preview-image {
+    max-height: 180px;
+  }
+  
+  .file-info {
+    font-size: 0.7rem;
+  }
+  
+  .result-text {
+    max-height: 200px;
+    font-size: 0.85rem;
   }
   
   .chat-tab {
-    min-height: 450px;
+    height: calc(100vh - 260px);
   }
 }
 </style>

@@ -189,4 +189,72 @@ defineExpose({ reset })
   80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
 }
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  .upload-area {
+    padding: 2rem 1rem;
+    border-radius: 10px;
+  }
+  
+  .upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .upload-placeholder p:first-of-type {
+    font-size: 1rem;
+  }
+  
+  .upload-hint {
+    font-size: 0.8rem !important;
+  }
+  
+  .preview-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .image-preview {
+    max-width: 100%;
+    max-height: 200px;
+  }
+  
+  .preview-info {
+    text-align: center;
+  }
+  
+  .file-name {
+    font-size: 0.85rem;
+    word-break: break-all;
+  }
+  
+  .file-size {
+    font-size: 0.75rem;
+  }
+  
+  .remove-btn {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .upload-area {
+    padding: 1.5rem 0.75rem;
+  }
+  
+  .upload-icon {
+    font-size: 2rem;
+  }
+  
+  .paste-hint {
+    font-size: 0.85rem !important;
+  }
+  
+  .paste-toast {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+}
 </style>

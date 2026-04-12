@@ -553,4 +553,132 @@ textarea::placeholder {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ===== 响应式 ===== */
+@media (max-width: 768px) {
+  .chat-messages {
+    padding: 0.75rem;
+  }
+  
+  .welcome-message {
+    padding: 1.5rem 1rem;
+  }
+  
+  .welcome-icon {
+    font-size: 2.5rem;
+  }
+  
+  .welcome-title {
+    font-size: 1rem;
+  }
+  
+  .welcome-desc {
+    font-size: 0.85rem;
+  }
+  
+  .message {
+    margin-bottom: 0.75rem;
+  }
+  
+  .message-content {
+    max-width: 85%;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.9rem;
+    border-radius: 14px;
+  }
+  
+  .user-message .message-content {
+    border-radius: 14px 14px 4px 14px;
+  }
+  
+  .assistant-message .message-content {
+    border-radius: 14px 14px 14px 4px;
+  }
+  
+  .message-time {
+    font-size: 0.65rem;
+    margin-top: 0.25rem;
+  }
+  
+  .typing-indicator {
+    padding: 0.6rem 0.85rem;
+  }
+  
+  .typing-dot {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .input-row {
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  .attach-btn,
+  .send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+  }
+  
+  textarea {
+    padding: 0.6rem 0.75rem;
+    font-size: 16px; /* 防止iOS缩放 */
+    border-radius: 8px;
+    min-height: 38px;
+    max-height: 100px;
+  }
+  
+  .attached-image-preview {
+    max-width: 120px;
+    max-height: 120px;
+  }
+  
+  .remove-image {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    top: -6px;
+    right: -6px;
+  }
+}
+
+/* 小屏幕手机 */
+@media (max-width: 480px) {
+  .chat-messages {
+    padding: 0.5rem;
+  }
+  
+  .message-content {
+    max-width: 88%;
+    padding: 0.5rem 0.7rem;
+    font-size: 0.875rem;
+  }
+  
+  .welcome-icon {
+    font-size: 2rem;
+  }
+  
+  .welcome-title {
+    font-size: 0.9rem;
+  }
+  
+  .welcome-desc {
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+  
+  .input-row {
+    padding: 0.5rem;
+  }
+  
+  textarea {
+    font-size: 16px;
+  }
+  
+  .attached-image-preview {
+    max-width: 100px;
+    max-height: 100px;
+  }
+}
 </style>
