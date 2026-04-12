@@ -17,11 +17,11 @@ from threading import Lock
 
 # ============== 配置 ==============
 
-MYSQL_HOST = os.environ.get('MYSQL_HOST', '172.16.0.6')
+MYSQL_HOST = os.environ.get('MYSQL_HOST', '127.0.0.1')
 MYSQL_PORT = int(os.environ.get('MYSQL_PORT', 3306))
-MYSQL_USER = os.environ.get('MYSQL_USER', 'openclaw')
-MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', 'X37X4y5hbm3wfbi8')
-MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE', 'minimax_vision')
+MYSQL_USER = os.environ.get('MYSQL_USER', 'huiyan')
+MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', 'BhEyrdGTeRA7n8cW')
+MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE', 'huiyan')
 
 ALERT_EMAIL = os.environ.get('ALERT_EMAIL', 'lxyit24@qq.com')
 ALERT_THRESHOLD_ERROR_RATE = float(os.environ.get('ALERT_THRESHOLD_ERROR_RATE', 5.0))  # 5% 错误率阈值
