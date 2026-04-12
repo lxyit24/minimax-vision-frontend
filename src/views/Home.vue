@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import AnalysisResult from '@/components/AnalysisResult.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
@@ -160,6 +160,41 @@ const chatSessionId = ref('default')
 
 // Toast
 const showCopyToast = ref(false)
+
+// localStorage key for chat messages
+const CHAT_STORAGE_KEY = 'minimax-vision-chat-messages'
+
+// 从 localStorage 加载聊天记录
+const loadChatFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(CHAT_STORAGE_KEY)
+    if (stored) {
+      const messages = JSON.parse(stored)
+      if (Array.isArray(messages)) {
+        chatMessages.value = messages
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load chat from localStorage:', e)
+  }
+}
+
+// 保存聊天记录到 localStorage
+const saveChatToStorage = () => {
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatMessages.value))
+  } catch (e) {
+    console.error('Failed to save chat to localStorage:', e)
+  }
+}
+
+// 页面加载时从 localStorage 恢复聊天记录
+onMounted(() => {
+  loadChatFromStorage()
+})
+
+// 监听聊天消息变化，自动保存到 localStorage
+watch(chatMessages, saveChatToStorage, { deep: true })
 
 const handleImageSelected = async (file: File, preview: string) => {
   selectedImage.value = file
@@ -217,6 +252,8 @@ const handleClearChat = async () => {
   try {
     await clearChat(chatSessionId.value)
     chatMessages.value = []
+    // 清除 localStorage 中的聊天记录
+    localStorage.removeItem(CHAT_STORAGE_KEY)
   } catch (error) {
     console.error('Clear chat error:', error)
   }
