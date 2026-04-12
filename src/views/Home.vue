@@ -1,8 +1,20 @@
 <template>
   <div class="home">
     <header class="header">
-      <h1>🖼️ MiniMax 图片理解</h1>
-      <p>上传图片，AI 智能分析内容</p>
+      <div class="header-top">
+        <div class="header-title">
+          <h1>🖼️ MiniMax 图片理解</h1>
+          <p>上传图片，AI 智能分析内容</p>
+        </div>
+        <a 
+          href="/api/docs" 
+          target="_blank" 
+          class="api-docs-btn"
+          title="查看 API 文档"
+        >
+          📚 API 文档
+        </a>
+      </div>
     </header>
 
     <main class="main-content">
@@ -126,19 +138,50 @@ const copyResult = async () => {
 }
 
 .header {
-  padding: 2rem;
+  padding: 1.5rem 2rem;
   text-align: center;
   color: white;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.header-title {
+  text-align: left;
+}
+
 .header h1 {
   margin: 0;
-  font-size: 2.5rem;
+  font-size: 2rem;
 }
 
 .header p {
-  margin: 0.5rem 0 0;
+  margin: 0.25rem 0 0;
   opacity: 0.9;
+}
+
+.api-docs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.api-docs-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .main-content {
