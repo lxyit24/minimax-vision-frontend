@@ -1,54 +1,101 @@
 <template>
   <div class="home">
-    <header class="header">
-      <div class="header-top">
-        <div class="header-title">
-          <h1>🖼️ MiniMax 图片理解</h1>
-          <p>上传图片，AI 智能分析内容</p>
-        </div>
-        <router-link 
-          to="/docs" 
-          class="api-docs-btn"
-          title="查看 API 文档"
-        >
+    <!-- 顶部导航 -->
+    <header class="top-nav">
+      <div class="nav-brand">
+        <span class="brand-icon">🔮</span>
+        <span class="brand-name">MiniMax Vision</span>
+        <span class="brand-badge">图片理解</span>
+      </div>
+      <div class="nav-actions">
+        <router-link to="/docs" class="nav-link">
           📚 API 文档
         </router-link>
       </div>
     </header>
 
-    <main class="main-content">
-      <div class="upload-section">
-        <ImageUploader @image-selected="handleImageSelected" />
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          AI 驱动的图片理解
+        </div>
+        <h1>智能图片分析<br/>只需上传即可</h1>
+        <p class="hero-desc">
+          基于 MiniMax 先进的多模态模型，自动识别图片中的物体、场景、文字和语义理解。支持自定义提示词，获得精准的分析结果。
+        </p>
+        <div class="hero-features">
+          <span class="feature-tag">🌐 多语言支持</span>
+          <span class="feature-tag">⚡ 快速响应</span>
+          <span class="feature-tag">🔒 安全可靠</span>
+        </div>
       </div>
+      <div class="hero-visual">
+        <div class="floating-card">
+          <div class="card-icon">🖼️</div>
+          <span>上传图片</span>
+        </div>
+        <div class="floating-card">
+          <div class="card-icon">✨</div>
+          <span>AI 分析</span>
+        </div>
+        <div class="floating-card">
+          <div class="card-icon">📝</div>
+          <span>获取结果</span>
+        </div>
+      </div>
+    </section>
 
-      <!-- 提示词输入框 -->
-      <div class="prompt-section">
-        <h2>💬 自定义提示词</h2>
-        <div class="prompt-input-wrapper">
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 上传区域 -->
+      <section class="upload-section">
+        <div class="section-header">
+          <h2>📤 上传图片</h2>
+          <p class="section-desc">支持 JPG、PNG、GIF、WebP 格式，最大 10MB</p>
+        </div>
+        <ImageUploader @image-selected="handleImageSelected" />
+      </section>
+
+      <!-- 提示词输入 -->
+      <section class="prompt-section">
+        <div class="section-header">
+          <h2>💬 自定义提示词</h2>
+          <p class="section-desc">指定你想从图片中获取什么信息</p>
+        </div>
+        <div class="prompt-card">
           <textarea 
             v-model="customPrompt"
-            placeholder="输入你想让 AI 分析的内容... (可选，默认会详细描述图片)"
+            placeholder="例如：请详细描述这张图片中的场景、人物和物品..."
             rows="3"
             @keydown.ctrl.c="copyResult"
           ></textarea>
-          <div class="prompt-hint">
-            <span>按 Ctrl+C 复制分析结果</span>
-            <button class="copy-btn" @click="copyResult" title="复制结果">
-              📋 复制
+          <div class="prompt-footer">
+            <span class="prompt-hint">
+              💡 按 <kbd>Ctrl</kbd>+<kbd>C</kbd> 复制分析结果
+            </span>
+            <button class="copy-btn" @click="copyResult" :disabled="!analysisResult">
+              📋 复制结果
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div v-if="selectedImage" class="preview-section">
-        <h2>📷 图片预览</h2>
+      <!-- 图片预览 -->
+      <section v-if="selectedImage" class="preview-section">
+        <div class="section-header">
+          <h2>📷 图片预览</h2>
+          <span class="file-info">{{ selectedImage.name }} ({{ formatSize(selectedImage.size) }})</span>
+        </div>
         <div class="image-preview">
           <img :src="previewUrl" alt="Preview" />
         </div>
-      </div>
+      </section>
 
-      <div v-if="analysisResult || isAnalyzing" class="result-section">
-        <div class="result-header">
+      <!-- 分析结果 -->
+      <section v-if="analysisResult || isAnalyzing" class="result-section">
+        <div class="section-header">
           <h2>📝 分析结果</h2>
           <button v-if="analysisResult" class="copy-btn" @click="copyResult">
             📋 复制结果
@@ -58,17 +105,31 @@
           :result="analysisResult" 
           :is-loading="isAnalyzing" 
         />
-      </div>
+      </section>
     </main>
 
+    <!-- 底部 -->
     <footer class="footer">
-      <p>Powered by MiniMax Vision API + OpenClaw MCP</p>
+      <div class="footer-content">
+        <div class="footer-brand">
+          <span class="brand-icon">🔮</span>
+          <span>MiniMax Vision API</span>
+        </div>
+        <p class="footer-desc">基于 MiniMax 多模态模型构建，支持文件上传、Base64、URL 多种分析方式</p>
+        <div class="footer-links">
+          <router-link to="/docs">API 文档</router-link>
+          <span class="divider">|</span>
+          <a href="https://github.com/lxyit24/minimax-vision-frontend" target="_blank">GitHub</a>
+        </div>
+      </div>
     </footer>
 
-    <!-- 复制成功提示 -->
-    <div v-if="showCopyToast" class="copy-toast">
-      ✅ 已复制到剪贴板
-    </div>
+    <!-- Toast 提示 -->
+    <Transition name="toast">
+      <div v-if="showCopyToast" class="toast">
+        ✅ 已复制到剪贴板
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -89,7 +150,6 @@ const handleImageSelected = async (file: File, preview: string) => {
   selectedImage.value = file
   previewUrl.value = preview
   
-  // Start analysis
   isAnalyzing.value = true
   analysisResult.value = ''
   
@@ -109,11 +169,8 @@ const copyResult = async () => {
   try {
     await navigator.clipboard.writeText(analysisResult.value)
     showCopyToast.value = true
-    setTimeout(() => {
-      showCopyToast.value = false
-    }, 2000)
+    setTimeout(() => { showCopyToast.value = false }, 2000)
   } catch (err) {
-    // Fallback for older browsers
     const textarea = document.createElement('textarea')
     textarea.value = analysisResult.value
     document.body.appendChild(textarea)
@@ -121,158 +178,360 @@ const copyResult = async () => {
     document.execCommand('copy')
     document.body.removeChild(textarea)
     showCopyToast.value = true
-    setTimeout(() => {
-      showCopyToast.value = false
-    }, 2000)
+    setTimeout(() => { showCopyToast.value = false }, 2000)
   }
+}
+
+const formatSize = (bytes: number): string => {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 </script>
 
 <style scoped>
+/* ===== 基础变量 ===== */
 .home {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --primary-light: #818cf8;
+  --success: #10b981;
+  --bg-dark: #0f172a;
+  --bg-card: #1e293b;
+  --bg-code: #0d1117;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border: #334155;
 }
 
-.header {
-  padding: 1.5rem 2rem;
-  text-align: center;
-  color: white;
-}
-
-.header-top {
+/* ===== 顶部导航 ===== */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  max-width: 800px;
-  margin: 0 auto;
+  padding: 0.75rem 2rem;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
 }
 
-.header-title {
-  text-align: left;
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.header h1 {
-  margin: 0;
-  font-size: 2rem;
+.brand-icon {
+  font-size: 1.5rem;
 }
 
-.header p {
-  margin: 0.25rem 0 0;
-  opacity: 0.9;
+.brand-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-primary);
 }
 
-.api-docs-btn {
+.brand-badge {
+  background: var(--primary);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* ===== Hero Section ===== */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  padding: 4rem 3rem;
+  background: var(--bg-dark);
+  min-height: 400px;
+}
+
+.hero-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  text-decoration: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: background 0.2s;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary-light);
+  padding: 0.4rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  width: fit-content;
 }
 
-.api-docs-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--primary-light);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
 }
 
-.main-content {
-  flex: 1;
-  padding: 2rem;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.hero h1 {
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 1rem;
+  line-height: 1.2;
+}
+
+.hero-desc {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  line-height: 1.7;
+  margin: 0 0 1.5rem;
+  max-width: 500px;
+}
+
+.hero-features {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.feature-tag {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+
+.hero-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.floating-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  align-items: center;
+  gap: 0.75rem;
+  animation: float 3s ease-in-out infinite;
+  min-width: 120px;
+}
+
+.floating-card:nth-child(2) {
+  animation-delay: 0.5s;
+  transform: translateY(-10px);
+}
+
+.floating-card:nth-child(3) {
+  animation-delay: 1s;
+  transform: translateY(-20px);
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.floating-card:nth-child(2) {
+  animation: float2 3s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translateY(-10px); }
+  50% { transform: translateY(-20px); }
+}
+
+.floating-card:nth-child(3) {
+  animation: float3 3s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translateY(-20px); }
+  50% { transform: translateY(-30px); }
+}
+
+.card-icon {
+  font-size: 2rem;
+}
+
+.floating-card span {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* ===== 主内容区 ===== */
+.main-content {
+  padding: 2rem 3rem 4rem;
   max-width: 800px;
   margin: 0 auto;
-  width: 100%;
 }
 
-.upload-section,
-.prompt-section,
-.preview-section,
-.result-section {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-}
-
-h2 {
-  margin: 0 0 1rem;
-  color: #333;
-  font-size: 1.2rem;
-}
-
-.result-header {
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-}
-
-.result-header h2 {
-  margin: 0;
-}
-
-.prompt-input-wrapper {
-  display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-textarea {
+.section-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+
+.section-desc {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.file-info {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  background: var(--bg-card);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* ===== Section Cards ===== */
+.upload-section,
+.prompt-section,
+.preview-section,
+.result-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ===== Prompt Card ===== */
+.prompt-card {
+  background: var(--bg-code);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.prompt-card textarea {
   width: 100%;
-  padding: 0.75rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  padding: 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
   font-family: inherit;
   font-size: 0.95rem;
   resize: vertical;
-  min-height: 80px;
-  transition: border-color 0.2s;
+  min-height: 100px;
   box-sizing: border-box;
 }
 
-textarea:focus {
+.prompt-card textarea:focus {
   outline: none;
-  border-color: #667eea;
 }
 
-.prompt-hint {
+.prompt-card textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.prompt-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
-  color: #888;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.prompt-hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+kbd {
+  background: var(--bg-card);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
 }
 
 .copy-btn {
-  padding: 0.4rem 0.8rem;
-  background: #667eea;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: var(--primary);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.85rem;
-  transition: background 0.2s;
+  font-weight: 500;
+  transition: all 0.2s;
 }
 
-.copy-btn:hover {
-  background: #5568d3;
+.copy-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
 }
 
+.copy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== Image Preview ===== */
 .image-preview {
   display: flex;
   justify-content: center;
-  background: #f5f5f5;
-  border-radius: 8px;
+  background: var(--bg-code);
+  border-radius: 12px;
   padding: 1rem;
 }
 
@@ -280,35 +539,136 @@ textarea:focus {
   max-width: 100%;
   max-height: 400px;
   border-radius: 8px;
+  object-fit: contain;
 }
 
+/* ===== Footer ===== */
 .footer {
-  padding: 1.5rem;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--bg-dark);
+  border-top: 1px solid var(--border);
+  padding: 3rem 2rem;
 }
 
-.copy-toast {
+.footer-content {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.footer-desc {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.footer-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: var(--primary-light);
+}
+
+.footer-links .divider {
+  color: var(--text-muted);
+}
+
+/* ===== Toast ===== */
+.toast {
   position: fixed;
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: #333;
-  color: white;
+  background: var(--bg-card);
+  color: var(--text-primary);
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
+  border: 1px solid var(--success);
   font-size: 0.9rem;
-  animation: fadeInUp 0.3s ease;
+  z-index: 1000;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(10px);
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(20px);
+}
+
+/* ===== 响应式 ===== */
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 2rem;
+    text-align: center;
   }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+  
+  .hero-content {
+    align-items: center;
+  }
+  
+  .hero-desc {
+    max-width: 100%;
+  }
+  
+  .hero-features {
+    justify-content: center;
+  }
+  
+  .hero-visual {
+    margin-top: 1rem;
+  }
+  
+  .main-content {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .hero-visual {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .floating-card {
+    padding: 1.5rem 1rem;
+    min-width: 100px;
+  }
+  
+  .floating-card:nth-child(2),
+  .floating-card:nth-child(3) {
+    transform: none;
+    animation: none;
   }
 }
 </style>
