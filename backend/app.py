@@ -596,13 +596,28 @@ def call_minimax_chat(messages: list, session_id: str = None) -> str:
             image_data = msg.get('image')
             
             if image_data and role == 'user':
-                # 有图片的消息
+                # 检查是否已经是完整的 data URL
+                if image_data.startswith('data:'):
+                    # 已经是完整 data URL，直接使用
+                    image_url = image_data
+                else:
+                    # 是纯 base64，添加前缀
+                    image_url = f"data:image/jpeg;base64,{image_data}"
+                
+                # 构建 vision 消息
+                if content:
+                    message_content = [
+                        {"type": "text", "text": content},
+                        {"type": "image_url", "image_url": {"url": image_url}}
+                    ]
+                else:
+                    message_content = [
+                        {"type": "image_url", "image_url": {"url": image_url}}
+                    ]
+                
                 formatted_messages.append({
                     "role": "user",
-                    "content": [
-                        {"type": "text", "text": content},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}}
-                    ]
+                    "content": message_content
                 })
             else:
                 formatted_messages.append({"role": role, "content": content})
