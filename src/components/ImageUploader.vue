@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 
 const emit = defineEmits<{
   imageSelected: [file: File, preview: string]
@@ -74,31 +74,7 @@ const handlePaste = (event: ClipboardEvent) => {
   }
 }
 
-// 全局粘贴监听（确保页面任何位置都能粘贴）
-const handleGlobalPaste = (event: ClipboardEvent) => {
-  const items = event.clipboardData?.items
-  if (!items) return
-  
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      event.preventDefault()
-      const file = item.getAsFile()
-      if (file) {
-        processFile(file)
-        displayPasteToast()
-        break
-      }
-    }
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('paste', handleGlobalPaste)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('paste', handleGlobalPaste)
-})
+// Note: 全局 paste 监听已移除，Ctrl+V 图片上传功能移至 ChatPanel
 
 const triggerFileInput = () => {
   fileInput.value?.click()

@@ -101,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -159,6 +159,37 @@ function removeImage() {
   attachedImage.value = ''
   attachedImageFile.value = null
 }
+
+// 处理 Ctrl+V 粘贴图片
+function handlePaste(event: ClipboardEvent) {
+  const items = event.clipboardData?.items
+  if (!items) return
+  
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      event.preventDefault()
+      const file = item.getAsFile()
+      if (file) {
+        attachedImageFile.value = file
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          attachedImage.value = e.target?.result as string
+        }
+        reader.readAsDataURL(file)
+        break
+      }
+    }
+  }
+}
+
+// 注册/取消注册全局 paste 监听
+onMounted(() => {
+  document.addEventListener('paste', handlePaste)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('paste', handlePaste)
+})
 
 async function sendMessage() {
   if (!canSend.value) return
