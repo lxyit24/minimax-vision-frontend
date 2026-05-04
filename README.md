@@ -1,15 +1,40 @@
-# MiniMax Vision API
+# 慧眼视觉平台 (MiniMax Vision Frontend)
 
-基于 Vue 3 + MiniMax MCP 的图片理解 API 服务，支持第三方系统调用。
+基于 Vue 3 + Flask + MiniMax API 的智能视觉对话平台，支持图片分析和流式对话。
 
-## 功能
+**在线访问**: http://160.202.238.167:24066
 
-- 📷 图片上传分析（multipart/form-data）
-- 🔗 URL 图片分析（远程图片链接）
-- 📊 Base64 图片分析（JSON API）
-- 🔒 API 密钥认证
-- ⏱️ 请求限流保护
-- 📝 详细的 API 文档
+## 功能特性
+
+### 🖼️ 图片分析
+- 支持拖拽/粘贴上传图片
+- 支持 Ctrl+V 粘贴图片
+- 支持 URL 图片分析
+- 自动生成描述
+
+### 💬 智能对话
+- 流式输出，实时显示 AI 回复
+- **支持停止按钮**，可中断生成
+- 多对话历史管理
+- Markdown 渲染（代码高亮、表格、列表）
+- 支持附加图片到对话
+
+### 📱 全屏模式
+- 点击全屏按钮进入沉浸式对话
+- 支持 ESC 键退出
+
+### 🔒 设备隔离
+- 每个浏览器设备独立存储对话
+- 对话数据不与其他用户共享
+
+## 技术架构
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Vue 3 前端    │────▶│   Flask 后端    │────▶│  MiniMax API   │
+│   (端口 4000)   │◀────│  (端口 5001)   │◀────│  (天行AI代理)  │
+└─────────────────┘ SSE └─────────────────┘     └─────────────────┘
+```
 
 ## 快速开始
 
@@ -30,222 +55,148 @@ pip install -r requirements.txt
 # MiniMax API Key（必须）
 export MINIMAX_API_KEY="your_minimax_api_key"
 
-# 外部 API 密钥（可选，用于保护 API）
-export API_KEY="your-api-key-for-clients"
+# 对话 API（天行AI，必须）
+export CHAT_API_KEY="your_chat_api_key"
 
-# 调试模式
-export DEBUG=false
+# 外部 API 密钥（可选）
+export API_KEY="your-api-key"
 ```
 
-### 3. 启动服务
+### 3. 启动后端
 
 ```bash
 cd backend
 python app.py
 ```
 
-- API 服务: http://localhost:5001
-- 健康检查: http://localhost:5001/api/health
-- API 文档: http://localhost:5001/api/docs
+后端运行在 http://localhost:5001
 
-### 4. 启动前端（可选）
+### 4. 启动前端
 
 ```bash
 npm run dev
 ```
 
-前端运行在 http://localhost:5173
+前端运行在 http://localhost:4000
 
 ## API 文档
 
-完整的 API 文档在 `/api/docs` 端点。
-
 ### 认证
 
-API 使用 `X-API-Key` 请求头认证：
+API 使用 `X-API-Key` 请求头认证（可选）：
 
 ```bash
 curl -H "X-API-Key: your-api-key" ...
 ```
 
-如果不设置 `API_KEY` 环境变量，则无需认证。
-
 ### 端点
 
 #### POST /api/analyze
-
-上传图片文件进行分析
+图片分析
 
 ```bash
 curl -X POST http://localhost:5001/api/analyze \
-  -H "X-API-Key: your-key" \
   -F "image=@photo.jpg" \
   -F "prompt=请描述这张图片"
 ```
 
-**参数**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| image | File | ✅ | 图片文件 |
-| prompt | string | ❌ | 分析提示词（默认中文详细描述）|
-| format | string | ❌ | 返回格式：`json`（默认）或 `text` |
-
-**响应**:
-```json
-{
-  "success": true,
-  "result": "这是一张街道照片，阳光明媚...",
-  "metadata": {
-    "filename": "photo.jpg",
-    "size": 123456,
-    "prompt": "请描述这张图片",
-    "model": "MiniMax-MCP"
-  }
-}
-```
-
-#### POST /api/analyze/base64
-
-发送 Base64 编码的图片
+#### POST /api/chat/stream
+流式对话（SSE）
 
 ```bash
-curl -X POST http://localhost:5001/api/analyze/base64 \
+curl -X POST http://localhost:5001/api/chat/stream \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: your-key" \
-  -d '{
-    "image": "data:image/jpeg;base64,/9j/4AAQ...",
-    "prompt": "请详细描述"
-  }'
+  -d '{"message": "你好", "session_id": "abc123"}'
 ```
 
-**参数**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| image | string | ✅ | Base64 图片数据（支持 data URI 或纯 base64）|
-| prompt | string | ❌ | 分析提示词 |
-| format | string | ❌ | 返回格式：`json` 或 `text` |
+**SSE 事件流格式:**
+```
+data: {"type": "session_id", "session_id": "abc123"}
 
-#### POST /api/analyze/url
+data: {"type": "content", "content": "你好"}
 
-通过 URL 分析远程图片
+data: {"type": "content", "content": "，我是"}
+
+data: {"type": "content", "content": "AI 助手"}
+
+data: {"type": "done"}
+```
+
+#### POST /api/chat/clear
+清除会话历史
 
 ```bash
-curl -X POST http://localhost:5001/api/analyze/url \
+curl -X POST http://localhost:5001/api/chat/clear \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: your-key" \
-  -d '{
-    "url": "https://example.com/photo.jpg",
-    "prompt": "这张图片里有什么？"
-  }'
+  -d '{"session_id": "abc123"}'
 ```
-
-**参数**:
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| url | string | ✅ | 图片 URL |
-| prompt | string | ❌ | 分析提示词 |
-| format | string | ❌ | 返回格式：`json` 或 `text` |
-
-### 错误码
-
-| code | 说明 |
-|------|------|
-| MISSING_API_KEY | 未提供 API 密钥 |
-| INVALID_API_KEY | API 密钥无效 |
-| RATE_LIMITED | 请求过于频繁（60次/分钟）|
-| MISSING_IMAGE | 未提供图片 |
-| INVALID_IMAGE | 图片格式无效或太大 |
-| ANALYSIS_ERROR | 分析失败 |
-
-### 示例代码
-
-**Python 调用示例**:
-
-```python
-import requests
-
-url = "http://localhost:5001/api/analyze"
-headers = {"X-API-Key": "your-key"}
-
-# 上传文件
-with open("photo.jpg", "rb") as f:
-    files = {"image": f}
-    data = {"prompt": "请描述这张图片"}
-    resp = requests.post(url, files=files, data=data, headers=headers)
-    print(resp.json())
-
-# Base64 方式
-import base64
-with open("photo.jpg", "rb") as f:
-    b64 = base64.b64encode(f.read()).decode()
-resp = requests.post(
-    "http://localhost:5001/api/analyze/base64",
-    json={"image": b64, "prompt": "请描述"},
-    headers={**headers, "Content-Type": "application/json"}
-)
-print(resp.json())
-```
-
-**JavaScript 调用示例**:
-
-```javascript
-// 上传文件
-const formData = new FormData();
-formData.append('image', fileInput.files[0]);
-formData.append('prompt', '请描述这张图片');
-
-const resp = await fetch('http://localhost:5001/api/analyze', {
-  method: 'POST',
-  headers: { 'X-API-Key': 'your-key' },
-  body: formData
-});
-console.log(await resp.json());
-
-// Base64
-const resp = await fetch('http://localhost:5001/api/analyze/base64', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-API-Key': 'your-key'
-  },
-  body: JSON.stringify({
-    image: base64String,
-    prompt: '请描述这张图片'
-  })
-});
-console.log(await resp.json());
-```
-
-## 技术栈
-
-- **前端**: Vue 3 + TypeScript + Vite + Pinia
-- **后端**: Python Flask + MiniMax MCP Tools
-- **限流**: 60 请求/分钟/IP
 
 ## 项目结构
 
 ```
 minimax-vision-frontend/
 ├── src/
-│   ├── api/analysis.ts       # 前端 API 调用
+│   ├── api/
+│   │   └── analysis.ts       # API 调用（含 AbortSignal 支持）
 │   ├── components/
-│   │   ├── ImageUploader.vue  # 图片上传
-│   │   └── AnalysisResult.vue # 结果展示
-│   └── views/Home.vue         # 主页
+│   │   ├── ChatPanel.vue     # 聊天组件（Markdown/全屏/停止）
+│   │   ├── ImageUploader.vue # 图片上传
+│   │   └── AnalysisResult.vue
+│   ├── views/
+│   │   └── Home.vue          # 主视图（多对话管理）
+│   └── assets/
+│       └── hero.png          # 测试图片
 ├── backend/
-│   ├── app.py                # Flask API 服务
+│   ├── app.py                # Flask 主应用
+│   ├── mmx_vision_mcp.py     # MiniMax MCP 封装器
 │   └── requirements.txt
-└── package.json
+├── package.json
+└── vite.config.ts
 ```
+
+## 主要功能实现
+
+### 流式对话
+- 端点: `/api/chat/stream`
+- 使用 Server-Sent Events (SSE)
+- 支持 AbortSignal 取消请求
+- 对话历史存储在后端内存中
+
+### 多对话管理
+- 存储位置: localStorage (`minimax-vision-conversations-{deviceId}`)
+- 设备隔离: 每浏览器独立存储
+- 支持创建、切换、删除对话
+
+### Markdown 渲染
+- 使用 `marked` 库
+- 使用 `DOMPurify` 防止 XSS
+- 支持代码块、表格、列表等
 
 ## 环境变量
 
 | 变量 | 必填 | 默认值 | 说明 |
 |------|------|--------|------|
 | MINIMAX_API_KEY | ✅ | - | MiniMax API Key |
-| API_KEY | ❌ | - | 外部 API 密钥（不设置则开放访问）|
-| API_KEY | ❌ | false | 调试模式 |
-| MINIMAX_API_HOST | ❌ | https://api.minimaxi.com | MiniMax API 端点 |
+| CHAT_API_KEY | ✅ | - | 天行AI 对话 API Key |
+| CHAT_API_HOST | ❌ | https://ai.1i.wiki/v1 | 对话 API 地址 |
+| API_KEY | ❌ | - | 外部 API 密钥 |
+| DEBUG | ❌ | false | 调试模式 |
+
+## 更新日志
+
+### v0.2.0 (2026-05-05)
+- ✅ 流式对话输出 (SSE)
+- ✅ 停止按钮功能 (AbortSignal)
+- ✅ 多对话历史管理
+- ✅ 设备隔离存储
+- ✅ Markdown 渲染增强
+- ✅ 全屏对话模式
+- ✅ 图片粘贴上传
+
+### v0.1.0 (2026-05-04)
+- 初始版本
+- 图片分析基础功能
+- URL/Base64 图片支持
 
 ## License
 
