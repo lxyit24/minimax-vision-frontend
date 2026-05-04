@@ -17,18 +17,6 @@ from subprocess import Popen, PIPE
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 
-# 导入监控模块
-from monitoring import (
-    metrics_collector,
-    log_request_to_mysql,
-    get_prometheus_metrics,
-    check_api_health,
-    init_monitoring,
-    record_alert,
-    ALERT_THRESHOLD_ERROR_RATE,
-    ALERT_THRESHOLD_RESPONSE_TIME
-)
-
 app = Flask(__name__)
 CORS(app)
 
@@ -174,34 +162,8 @@ def require_api_key(f):
 
 
 def log_request(ip: str, endpoint: str, status: int, response_time_ms: float = 0):
-    """记录请求日志"""
-    if DEBUG:
-        print(f"[{datetime.now().isoformat()}] {ip} -> {endpoint} [{status}] {response_time_ms:.0f}ms")
-    
-    # 记录到内存指标收集器
-    metrics_collector.record_request(endpoint, status, response_time_ms, ip)
-    
-    # 异步记录到 MySQL
-    if status >= 400 or response_time_ms > 1000:  # 只记录错误或慢请求到 MySQL
-        error_code = None
-        if status == 429:
-            error_code = 'RATE_LIMITED'
-        elif status == 400:
-            error_code = 'BAD_REQUEST'
-        elif status == 413:
-            error_code = 'PAYLOAD_TOO_LARGE'
-        elif status >= 500:
-            error_code = 'SERVER_ERROR'
-        
-        log_request_to_mysql(
-            endpoint=endpoint,
-            method=request.method,
-            status=status,
-            response_time_ms=response_time_ms,
-            client_ip=ip,
-            user_agent=request.headers.get('User-Agent', '')[:500],
-            error_code=error_code
-        )
+    """记录请求日志（仅输出到控制台）"""
+    print(f"[{datetime.now().isoformat()}] {ip} -> {endpoint} [{status}] {response_time_ms:.0f}ms")
 
 
 # ============== 核心功能 ==============
@@ -341,44 +303,43 @@ def health():
 
 @app.route('/api/health/detailed')
 def health_detailed():
-    """详细健康检查"""
-    health_status = check_api_health()
+    """详细健康检查（简化版，无监控）"""
     return add_security_headers(jsonify({
         "status": "ok",
         "timestamp": datetime.now().isoformat(),
         "version": "2.0.0",
-        "health": health_status
+        "health": {
+            "api": "ok",
+            "mcp": "configured" if MINIMAX_API_KEY else "not_configured"
+        }
     }))
 
 
 @app.route('/api/metrics')
 def metrics():
-    """Prometheus 格式指标"""
-    metrics_data = metrics_collector.get_metrics()
+    """Prometheus 格式指标（已禁用）"""
     return add_security_headers(Response(
-        get_prometheus_metrics(),
+        "# Monitoring disabled\n",
         mimetype='text/plain; charset=utf-8'
     ))
 
 
 @app.route('/api/metrics/json')
 def metrics_json():
-    """JSON 格式指标"""
-    metrics_data = metrics_collector.get_metrics()
-    return add_security_headers(jsonify(metrics_data))
+    """JSON 格式指标（已禁用）"""
+    return add_security_headers(jsonify({
+        "status": "disabled",
+        "message": "Monitoring metrics have been disabled"
+    }))
 
 
 @app.route('/api/alerts')
 def alerts():
-    """当前告警状态"""
-    active_alerts = metrics_collector.check_alerts()
+    """当前告警状态（已禁用）"""
     return add_security_headers(jsonify({
         "success": True,
-        "alerts": active_alerts,
-        "thresholds": {
-            "error_rate_percent": ALERT_THRESHOLD_ERROR_RATE,
-            "response_time_ms": ALERT_THRESHOLD_RESPONSE_TIME
-        }
+        "alerts": [],
+        "message": "Alerts have been disabled"
     }))
 
 
@@ -1041,11 +1002,8 @@ def clear_chat():
 # ============== 启动 ==============
 
 if __name__ == '__main__':
-    # 初始化监控模块
-    init_monitoring()
-    
     print("=" * 60)
-    print("  MiniMax Vision API v2.1.0 (with Monitoring)")
+    print("  MiniMax Vision API v2.1.0")
     print("=" * 60)
     print(f"  MiniMax API Host: {MINIMAX_API_HOST}")
     print(f"  API Key Set:      {'Yes' if API_KEY else 'No (unsecured)'}")
