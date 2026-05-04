@@ -23,14 +23,14 @@ export async function analyzeImage(file: File, prompt?: string): Promise<string>
   if (prompt) {
     formData.append('prompt', prompt)
   }
-  
+
   const response = await axios.post(`${API_BASE}/api/analyze`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     },
     timeout: 120000 // 2 minutes timeout for image analysis
   })
-  
+
   return response.data.result
 }
 
@@ -49,8 +49,79 @@ export async function sendChatMessage(
     },
     timeout: 120000 // 2 minutes timeout
   })
-  
+
   return response.data
+}
+
+export async function sendChatMessageStream(
+  message: string,
+  onChunk: (content: string) => void,
+  image?: string,
+  sessionId?: string,
+  onError?: (error: string) => void,
+  onDone?: () => void,
+  signal?: AbortSignal
+): Promise<string> {
+  // 使用 fetch 实现流式读取
+  const response = await fetch(`${API_BASE}/api/chat/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      message,
+      image,
+      session_id: sessionId || undefined
+    }),
+    signal  // Pass the AbortSignal to enable cancellation
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  const reader = response.body?.getReader()
+  const decoder = new TextDecoder()
+  let fullContent = ''
+
+  if (!reader) {
+    throw new Error('No reader available')
+  }
+
+  while (true) {
+    const { done, value } = await reader.read()
+
+    if (done) {
+      break
+    }
+
+    const chunk = decoder.decode(value, { stream: true })
+    const lines = chunk.split('\n')
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const data = JSON.parse(line.slice(6))
+
+          if (data.type === 'session_id') {
+            // Session ID received, could be stored if needed
+          } else if (data.type === 'content') {
+            fullContent += data.content
+            onChunk(data.content)
+          } else if (data.type === 'error') {
+            onError?.(data.error)
+            return fullContent
+          } else if (data.type === 'done') {
+            onDone?.()
+          }
+        } catch (e) {
+          // Ignore parse errors for incomplete JSON
+        }
+      }
+    }
+  }
+
+  return fullContent
 }
 
 export async function clearChat(sessionId?: string): Promise<void> {

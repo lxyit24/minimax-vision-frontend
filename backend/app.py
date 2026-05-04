@@ -170,9 +170,10 @@ def log_request(ip: str, endpoint: str, status: int, response_time_ms: float = 0
 
 def call_mcp_understand_image(image_path: str, prompt: str = "请详细描述这张图片的内容") -> str:
     """
-    调用 MiniMax MCP 工具 understand_image
+    调用 MiniMax MCP 工具 understand_image (使用 mmx-cli 封装)
     """
-    uvx_path = "/root/.local/bin/uvx"
+    python_path = "/usr/bin/python3"
+    mcp_script = "/root/.openclaw/workspace/minimax-vision-frontend/backend/mmx_vision_mcp.py"
     
     # MCP JSON-RPC 请求
     initialize_request = {
@@ -211,7 +212,7 @@ def call_mcp_understand_image(image_path: str, prompt: str = "请详细描述这
     env['MINIMAX_API_HOST'] = MINIMAX_API_HOST
     
     proc = Popen(
-        [uvx_path, "minimax-coding-plan-mcp", "-y"],
+        [python_path, mcp_script],
         env=env,
         stdin=PIPE,
         stdout=PIPE,
@@ -736,6 +737,82 @@ chat_histories = {}  # {session_id: [{"role": "user/assistant", "content": "..."
 chat_max_history = 20  # 最多保留 20 条对话
 
 
+def call_minimax_chat_stream(messages: list, session_id: str = None):
+    """
+    调用天行AI 聊天 API (OpenAI 兼容格式) - 流式版本
+    messages: [{"role": "user/assistant", "content": "..."}, ...]
+    使用 SSE (Server-Sent Events) yield 每个 token
+    """
+    import urllib.request
+    import urllib.error
+    import ssl
+    
+    if not CHAT_API_KEY:
+        raise Exception("CHAT_API_KEY not configured")
+    
+    # 构建 API 请求
+    url = f"{CHAT_API_HOST}/chat/completions"
+    
+    # 构建纯文本消息（图片已转换为文字）
+    formatted_messages = []
+    for msg in messages:
+        if isinstance(msg, dict):
+            role = msg.get('role', 'user')
+            content = msg.get('content', '')
+            if content:  # 只添加有内容的消息
+                formatted_messages.append({"role": role, "content": content})
+        else:
+            formatted_messages.append({"role": "user", "content": str(msg)})
+    
+    payload = {
+        "model": "MiniMax-M2.7-highspeed",
+        "messages": formatted_messages,
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "stream": True  # 启用流式输出
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {CHAT_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    ctx = ssl.create_default_context()
+    
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode('utf-8'),
+            headers=headers,
+            method='POST'
+        )
+        
+        with urllib.request.urlopen(req, context=ctx, timeout=120) as response:
+            # 流式读取响应
+            for line in response:
+                line = line.decode('utf-8').strip()
+                if not line:
+                    continue
+                if line.startswith('data: '):
+                    data_str = line[6:]  # Remove 'data: ' prefix
+                    if data_str == '[DONE]':
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                        if 'choices' in chunk and len(chunk['choices']) > 0:
+                            delta = chunk['choices'][0].get('delta', {})
+                            content = delta.get('reasoning_content') or delta.get('content', '')
+                            if content:
+                                yield f"data: {json.dumps({'content': content})}\n\n"
+                    except json.JSONDecodeError:
+                        continue
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8') if e.fp else str(e)
+        yield f"data: {json.dumps({'error': f'API Error {e.code}: {error_body}'})}\n\n"
+    except Exception as e:
+        yield f"data: {json.dumps({'error': f'Chat API Error: {str(e)}'})}\n\n"
+
+
 def call_minimax_chat(messages: list, session_id: str = None) -> str:
     """
     调用天行AI 聊天 API (OpenAI 兼容格式)
@@ -803,6 +880,160 @@ def call_minimax_chat(messages: list, session_id: str = None) -> str:
         raise Exception(f"Chat API Error: {str(e)}")
 
 
+@app.route('/api/chat/stream', methods=['POST'])
+
+def chat_stream():
+    """
+    智能对话接口 - 流式版本 (SSE)
+    支持多轮对话和图片分析
+    """
+    ip = get_client_ip()
+    
+    if not check_rate_limit(ip, max_requests=30):  # 对话接口更严格的限流
+        return add_security_headers(Response(
+            f"data: {json.dumps({'error': 'Rate limit exceeded. Max 30 requests per minute.', 'code': 'RATE_LIMITED'})}\n\n",
+            mimetype='text/event-stream'
+        )), 429
+    
+    data = request.get_json()
+    
+    if not data or 'message' not in data:
+        return add_security_headers(Response(
+            f"data: {json.dumps({'error': 'Missing message field', 'code': 'INVALID_REQUEST'})}\n\n",
+            mimetype='text/event-stream'
+        )), 400
+    
+    # 限制消息长度
+    user_message = sanitize_prompt(data['message'], max_length=4000)
+    image_data = data.get('image')  # 可选的 base64 图片
+    
+    # 处理 session_id：如果是新建会话或为空，生成 UUID
+    provided_session_id = data.get('session_id')
+    if not provided_session_id:
+        session_id = str(uuid.uuid4())
+        is_new_session = True
+    else:
+        # 验证 session_id 格式（只允许字母数字和连字符）
+        if not all(c.isalnum() or c in '-_' for c in provided_session_id):
+            return add_security_headers(Response(
+                f"data: {json.dumps({'error': 'Invalid session_id format', 'code': 'INVALID_REQUEST'})}\n\n",
+                mimetype='text/event-stream'
+            )), 400
+        session_id = provided_session_id
+        is_new_session = False
+    
+    # 首先发送 session_id
+    def generate():
+        # 发送 session_id 事件
+        yield f"data: {json.dumps({'type': 'session_id', 'session_id': session_id})}\n\n"
+        
+        # 获取或创建会话历史
+        if session_id not in chat_histories:
+            chat_histories[session_id] = []
+        
+        history = chat_histories[session_id]
+        
+        # 如果有系统提示词且是新建会话，添加系统消息
+        if is_new_session and len(history) == 0:
+            system_prompt = "你是一个智能图片分析助手，名叫慧眼，由六仙云开发。用户会发送图片或文字消息，你可以分析图片内容并回答用户的问题。你专业、友好、乐于助人。如果用户发送图片，请仔细分析图片内容并给出详细描述。如果用户只是问问题，直接回答即可。记住：你的名字是慧眼，开发方是六仙云。如果有人问你是哪个模型，请回答你是慧眼模型。"
+            history.append({
+                "role": "system",
+                "content": system_prompt
+            })
+        
+        # 如果有图片，先用视觉分析后端分析图片
+        final_message = user_message
+        if image_data:
+            try:
+                # 保存图片到临时文件
+                # 处理 data URL 或纯 base64
+                if ',' in image_data:
+                    img_base64 = image_data.split(',')[1]
+                else:
+                    img_base64 = image_data
+                
+                img_bytes = base64.b64decode(img_base64)
+                temp_path = save_image(img_bytes)
+                
+                # 调用视觉分析 API
+                image_analysis = call_mcp_understand_image(
+                    temp_path, 
+                    "请详细描述这张图片的全部内容，包括：主要对象、背景、颜色、文字、布局等。"
+                )
+                
+                # 清理临时文件
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                
+                # 把图片分析结果拼到消息前面
+                final_message = f"【图片分析】{image_analysis}\n\n【用户消息】{user_message}"
+                
+            except Exception as e:
+                # 视觉分析失败，记录日志
+                log_request(ip, '/api/chat/stream/image_analysis', 500)
+                final_message = f"【图片分析失败】\n\n【用户消息】{user_message}"
+        
+        # 添加用户消息
+        user_msg = {
+            "role": "user", 
+            "content": final_message
+        }
+        
+        history.append(user_msg)
+        
+        # 限制历史长度
+        while len(history) > chat_max_history:
+            # 保留 system 消息
+            if history[0]["role"] == "system":
+                history = [history[0]] + history[2:]
+            else:
+                history = history[2:]
+        
+        full_response = ""
+        try:
+            # 调用流式 MiniMax API
+            for chunk in call_minimax_chat_stream(history, session_id):
+                # 解析并发送内容
+                try:
+                    chunk_data = json.loads(chunk.replace("data: ", "").strip())
+                    if 'content' in chunk_data:
+                        full_response += chunk_data['content']
+                        yield f"data: {json.dumps({'type': 'content', 'content': chunk_data['content']})}\n\n"
+                    elif 'error' in chunk_data:
+                        yield f"data: {json.dumps({'type': 'error', 'error': chunk_data['error']})}\n\n"
+                        return
+                except json.JSONDecodeError:
+                    continue
+            
+            # 添加助手回复到历史
+            history.append({
+                "role": "assistant",
+                "content": full_response
+            })
+            
+            log_request(ip, '/api/chat/stream', 200)
+            
+            # 发送完成事件
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
+        
+        except Exception as e:
+            log_request(ip, '/api/chat/stream', 500)
+            # 出错时移除用户消息
+            if user_msg in history:
+                history.remove(user_msg)
+            yield f"data: {json.dumps({'type': 'error', 'error': 'Chat service temporarily unavailable'})}\n\n"
+    
+    return add_security_headers(Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no'  # 禁用 nginx 缓冲
+        }
+    ))
+
+
 @app.route('/api/chat', methods=['POST'])
 
 def chat():
@@ -824,7 +1055,7 @@ def chat():
     if not data or 'message' not in data:
         return add_security_headers(jsonify({
             "success": False,
-            "error": "Missing 'message' field",
+            "error": 'Missing message field',
             "code": "INVALID_REQUEST"
         })), 400
     
@@ -886,17 +1117,17 @@ def chat():
                 os.remove(temp_path)
             
             # 把图片分析结果拼到消息前面
-            user_message = f"【图片分析】{image_analysis}\n\n【用户消息】{user_message}"
+            final_message = f"【图片分析】{image_analysis}\n\n【用户消息】{user_message}"
             
         except Exception as e:
             # 视觉分析失败，记录日志但不暴露给用户
             log_request(ip, '/api/chat/image_analysis', 500)
-            user_message = f"【图片分析失败】\n\n【用户消息】{user_message}"
+            final_message = f"【图片分析失败】\n\n【用户消息】{user_message}"
     
     # 添加用户消息
     user_msg = {
         "role": "user", 
-        "content": user_message
+        "content": final_message
     }
     
     history.append(user_msg)

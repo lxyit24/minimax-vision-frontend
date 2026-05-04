@@ -1,5 +1,5 @@
 <template>
-  <div class="chat-panel">
+  <div class="chat-panel" :class="{ fullscreen: isFullscreen }">
     <!-- 聊天头部 -->
     <div class="chat-header">
       <div class="chat-title">
@@ -7,6 +7,9 @@
         <span>慧眼 智能助手</span>
       </div>
       <div class="chat-actions">
+        <button class="action-btn" :class="{ 'fullscreen-active': isFullscreen }" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏'">
+          {{ isFullscreen ? '✖' : '⛶' }}
+        </button>
         <button class="action-btn" @click="clearChat" title="清除对话">
           🗑️ 清除
         </button>
@@ -40,8 +43,8 @@
           <div v-if="msg.image" class="message-image">
             <img :src="msg.image" alt="Attached image" />
           </div>
-          <!-- 文字 -->
-          <div class="message-text">{{ msg.content }}</div>
+          <!-- 文字 (支持 Markdown 和 HTML) -->
+          <div class="message-text" v-html="renderContent(msg.content)"></div>
         </div>
       </div>
 
@@ -87,13 +90,14 @@
           ref="inputArea"
         ></textarea>
 
-        <!-- 发送按钮 -->
+        <!-- 发送/停止按钮 -->
         <button 
           class="send-btn" 
-          @click="sendMessage"
-          :disabled="!canSend"
+          :class="{ 'stop-btn': isLoading }"
+          @click="isLoading ? stopRequest() : sendMessage()"
+          :disabled="!canSend && !isLoading"
         >
-          ➤
+          {{ isLoading ? '⏹' : '➤' }}
         </button>
       </div>
     </div>
@@ -102,6 +106,33 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+
+// Configure marked
+marked.setOptions({
+  breaks: true,  // Convert line breaks to <br>
+  gfm: true,     // GitHub Flavored Markdown
+})
+
+// Render markdown/HTML content safely
+function renderContent(content: string): string {
+  if (!content) return ''
+  
+  // Check if content contains HTML tags
+  const containsHtml = /<[a-z][\s\S]*>/i.test(content)
+  
+  if (containsHtml) {
+    // Sanitize HTML content
+    return DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'b', 'i', 'code', 'pre', 'ul', 'ol', 'li', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'span', 'div'],
+      ALLOWED_ATTR: ['href', 'target', 'class', 'style'],
+    })
+  } else {
+    // Parse markdown
+    return DOMPurify.sanitize(marked.parse(content) as string)
+  }
+}
 
 interface Message {
   role: 'user' | 'assistant'
@@ -112,6 +143,7 @@ interface Message {
 const emit = defineEmits<{
   (e: 'send-message', message: string, image?: string): void
   (e: 'clear-chat'): void
+  (e: 'stop'): void
 }>()
 
 const props = defineProps<{
@@ -124,6 +156,7 @@ const attachedImage = ref<string>('')
 const attachedImageFile = ref<File | null>(null)
 const inputArea = ref<HTMLTextAreaElement | null>(null)
 const messagesContainer = ref<HTMLDivElement | null>(null)
+const isFullscreen = ref(false)
 
 const canSend = computed(() => {
   return (inputText.value.trim() || attachedImage.value) && !props.isLoading
@@ -189,6 +222,8 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('paste', handlePaste)
+  document.removeEventListener('keydown', handleKeydown)
+  document.body.style.overflow = ''
 })
 
 async function sendMessage() {
@@ -211,8 +246,24 @@ async function sendMessage() {
   emit('send-message', message, image)
 }
 
+function stopRequest() {
+  emit('stop')
+}
+
 function clearChat() {
   emit('clear-chat')
+}
+
+function toggleFullscreen() {
+  isFullscreen.value = !isFullscreen.value
+  
+  if (isFullscreen.value) {
+    // 全屏模式：添加 body 锁定防止背景滚动
+    document.body.style.overflow = 'hidden'
+  } else {
+    // 退出全屏：恢复滚动
+    document.body.style.overflow = ''
+  }
 }
 
 function scrollToBottom() {
@@ -224,6 +275,23 @@ function scrollToBottom() {
 }
 
 watch(() => props.messages.length, scrollToBottom)
+
+// Escape 键退出全屏
+function handleKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && isFullscreen.value) {
+    isFullscreen.value = false
+    document.body.style.overflow = ''
+  }
+}
+
+watch(isFullscreen, (newVal) => {
+  if (newVal) {
+    document.addEventListener('keydown', handleKeydown)
+  } else {
+    document.removeEventListener('keydown', handleKeydown)
+    document.body.style.overflow = ''
+  }
+})
 </script>
 
 <style scoped>
@@ -394,6 +462,92 @@ watch(() => props.messages.length, scrollToBottom)
   border-color: var(--primary, #6366f1);
 }
 
+/* Markdown/HTML 内容样式 */
+.message-text p {
+  margin: 0 0 0.5rem 0;
+}
+
+.message-text p:last-child {
+  margin-bottom: 0;
+}
+
+.message-text a {
+  color: var(--primary-light, #818cf8);
+  text-decoration: underline;
+}
+
+.message-text a:hover {
+  color: var(--primary, #6366f1);
+}
+
+.message-text strong, .message-text b {
+  font-weight: 600;
+}
+
+.message-text em, .message-text i {
+  font-style: italic;
+}
+
+.message-text code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85em;
+}
+
+.message.user .message-text code {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.message-text pre {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.75rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.message-text pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.message-text ul, .message-text ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.message-text li {
+  margin: 0.25rem 0;
+}
+
+.message-text blockquote {
+  border-left: 3px solid var(--primary, #6366f1);
+  margin: 0.5rem 0;
+  padding-left: 1rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.message-text h1, .message-text h2, .message-text h3,
+.message-text h4, .message-text h5, .message-text h6 {
+  margin: 0.75rem 0 0.5rem 0;
+  font-weight: 600;
+}
+
+.message-text h1 { font-size: 1.25rem; }
+.message-text h2 { font-size: 1.15rem; }
+.message-text h3 { font-size: 1.05rem; }
+
+.message-text span {
+  /* Allow span for inline styling */
+}
+
+.message-text div {
+  margin: 0.25rem 0;
+}
+
 /* 加载中 */
 .message.loading .message-text {
   padding: 1rem;
@@ -552,6 +706,39 @@ textarea::placeholder {
 .send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* 停止按钮样式 */
+.send-btn.stop-btn {
+  background: var(--error, #ef4444);
+}
+
+.send-btn.stop-btn:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+/* ===== 全屏模式 ===== */
+.chat-panel.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  border-radius: 0;
+  background: var(--bg-primary, #0f172a);
+}
+
+.chat-panel.fullscreen .chat-header {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 全屏按钮激活状态 */
+.action-btn.fullscreen-active {
+  background: var(--primary, #6366f1);
+  border-color: var(--primary, #6366f1);
+  color: white;
 }
 
 /* ===== 响应式 ===== */

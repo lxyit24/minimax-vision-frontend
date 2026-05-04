@@ -100,12 +100,53 @@
       <!-- ========== AI 对话模式 ========== -->
       <section v-show="activeTab === 'chat'" class="tab-content chat-tab">
         <div class="chat-wrapper">
-          <ChatPanel 
-            :messages="chatMessages"
-            :is-loading="isChatLoading"
-            @send-message="handleSendMessage"
-            @clear-chat="handleClearChat"
-          />
+          <!-- 对话历史侧边栏 -->
+          <aside class="conversation-sidebar" v-if="showSidebar">
+            <div class="sidebar-header">
+              <h3>对话历史</h3>
+              <button class="new-chat-btn" @click="createNewConversation" title="新建对话">
+                ✏️ 新对话
+              </button>
+            </div>
+            <div class="conversation-list">
+              <div 
+                v-for="conv in sortedConversations" 
+                :key="conv.id"
+                :class="['conversation-item', { active: conv.id === currentConversationId }]"
+                @click="switchConversation(conv.id)"
+              >
+                <div class="conv-info">
+                  <span class="conv-title">{{ conv.title }}</span>
+                  <span class="conv-time">{{ formatTime(conv.updatedAt) }}</span>
+                </div>
+                <button 
+                  class="delete-conv-btn" 
+                  @click.stop="deleteConversation(conv.id)"
+                  title="删除对话"
+                >
+                  🗑️
+                </button>
+              </div>
+              <div v-if="conversations.length === 0" class="no-conversations">
+                暂无对话记录
+              </div>
+            </div>
+          </aside>
+          
+          <div class="chat-main">
+            <!-- 切换侧边栏按钮 -->
+            <button class="toggle-sidebar-btn" @click="showSidebar = !showSidebar" :title="showSidebar ? '隐藏历史' : '显示历史'">
+              {{ showSidebar ? '◀' : '▶' }}
+            </button>
+            
+            <ChatPanel 
+              :messages="currentMessages"
+              :is-loading="isChatLoading"
+              @send-message="handleSendMessage"
+              @clear-chat="handleClearChat"
+              @stop="handleStop"
+            />
+          </div>
         </div>
       </section>
     </main>
@@ -138,12 +179,169 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watchEffect, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import ImageUploader from '@/components/ImageUploader.vue'
 import AnalysisResult from '@/components/AnalysisResult.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
-import { analyzeImage, sendChatMessage, clearChat } from '@/api/analysis'
+import { analyzeImage, sendChatMessageStream, clearChat } from '@/api/analysis'
 import type { ChatMessage } from '@/api/analysis'
+
+// ========== 对话历史管理 ==========
+
+interface Conversation {
+  id: string
+  title: string
+  messages: ChatMessage[]
+  createdAt: number
+  updatedAt: number
+}
+
+const DEVICE_ID_KEY = 'minimax-vision-device-id'
+const STORAGE_KEY_PREFIX = 'minimax-vision-conversations-'
+
+// 获取或生成设备唯一标识
+const getDeviceId = (): string => {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY)
+  if (!deviceId) {
+    deviceId = 'device_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9)
+    localStorage.setItem(DEVICE_ID_KEY, deviceId)
+  }
+  return deviceId
+}
+
+// 当前设备的存储 key
+const getStorageKey = (): string => {
+  return STORAGE_KEY_PREFIX + getDeviceId()
+}
+
+// 对话列表
+const conversations = ref<Conversation[]>([])
+const currentConversationId = ref<string | null>(null)
+const showSidebar = ref(true)  // 侧边栏默认显示
+
+// 加载对话历史
+const loadConversations = () => {
+  try {
+    const stored = localStorage.getItem(getStorageKey())
+    if (stored) {
+      const data = JSON.parse(stored)
+      conversations.value = data.conversations || []
+      currentConversationId.value = data.currentConversationId || null
+    } else {
+      conversations.value = []
+      currentConversationId.value = null
+    }
+  } catch (e) {
+    console.error('Failed to load conversations:', e)
+    conversations.value = []
+    currentConversationId.value = null
+  }
+}
+
+// 保存对话历史
+const saveConversations = () => {
+  try {
+    const data = {
+      conversations: conversations.value,
+      currentConversationId: currentConversationId.value
+    }
+    const jsonStr = JSON.stringify(data)
+    // 检查大小
+    if (jsonStr.length > 4 * 1024 * 1024) {
+      console.warn('Conversation data too large, skipping save')
+      return
+    }
+    localStorage.setItem(getStorageKey(), jsonStr)
+  } catch (e) {
+    console.error('Failed to save conversations:', e)
+  }
+}
+
+// 当前对话的消息
+const currentMessages = computed(() => {
+  if (!currentConversationId.value) return []
+  const conv = conversations.value.find(c => c.id === currentConversationId.value)
+  return conv?.messages || []
+})
+
+// 排序后的对话列表（最新在前）
+const sortedConversations = computed(() => {
+  return [...conversations.value].sort((a, b) => b.updatedAt - a.updatedAt)
+})
+
+// 生成唯一ID
+const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2)
+}
+
+// 创建新对话
+const createNewConversation = () => {
+  const newConv: Conversation = {
+    id: generateId(),
+    title: '新对话',
+    messages: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  }
+  conversations.value.push(newConv)
+  currentConversationId.value = newConv.id
+  saveConversations()
+}
+
+// 切换对话
+const switchConversation = (id: string) => {
+  currentConversationId.value = id
+  saveConversations()
+}
+
+// 删除对话
+const deleteConversation = (id: string) => {
+  const index = conversations.value.findIndex(c => c.id === id)
+  if (index === -1) return
+  
+  conversations.value.splice(index, 1)
+  
+  // 如果删除的是当前对话，切换到另一个或创建新对话
+  if (currentConversationId.value === id) {
+    if (conversations.value.length > 0) {
+      currentConversationId.value = conversations.value[0].id
+    } else {
+      // 没有对话了，创建新对话
+      createNewConversation()
+    }
+  }
+  saveConversations()
+}
+
+// 确保有当前对话
+const ensureCurrentConversation = () => {
+  if (!currentConversationId.value || !conversations.value.find(c => c.id === currentConversationId.value)) {
+    if (conversations.value.length === 0) {
+      createNewConversation()
+    } else {
+      currentConversationId.value = conversations.value[0].id
+    }
+  }
+}
+
+// 格式化时间
+const formatTime = (timestamp: number): string => {
+  const now = Date.now()
+  const diff = now - timestamp
+  const minute = 60 * 1000
+  const hour = 60 * minute
+  const day = 24 * hour
+  
+  if (diff < minute) return '刚刚'
+  if (diff < hour) return Math.floor(diff / minute) + '分钟前'
+  if (diff < day) return Math.floor(diff / hour) + '小时前'
+  if (diff < 7 * day) return Math.floor(diff / day) + '天前'
+  
+  const date = new Date(timestamp)
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+// ========== 原有功能 ==========
 
 // Tab state
 const activeTab = ref<'analyze' | 'chat'>('analyze')
@@ -156,58 +354,17 @@ const isAnalyzing = ref(false)
 const customPrompt = ref<string>('')
 
 // Chat mode state
-const chatMessages = ref<ChatMessage[]>([])
 const isChatLoading = ref(false)
 const chatSessionId = ref('default')
+const abortController = ref<AbortController | null>(null)
 
 // Toast
 const showCopyToast = ref(false)
 
-// localStorage key for chat messages
-const CHAT_STORAGE_KEY = 'minimax-vision-chat-messages'
-
-// 从 localStorage 加载聊天记录
-const loadChatFromStorage = () => {
-  try {
-    const stored = localStorage.getItem(CHAT_STORAGE_KEY)
-    if (stored) {
-      const messages = JSON.parse(stored)
-      if (Array.isArray(messages)) {
-        chatMessages.value = messages
-      }
-    }
-  } catch (e) {
-    console.error('Failed to load chat from localStorage:', e)
-  }
-}
-
-// 保存聊天记录到 localStorage
-const saveChatToStorage = () => {
-  try {
-    const data = JSON.stringify(chatMessages.value)
-    // 检查大小，避免超出 localStorage 限制（约5MB）
-    if (data.length > 4 * 1024 * 1024) {
-      console.warn('Chat data too large for localStorage, skipping save')
-      return
-    }
-    localStorage.setItem(CHAT_STORAGE_KEY, data)
-  } catch (e) {
-    console.error('Failed to save chat to localStorage:', e)
-  }
-}
-
-// 页面加载时从 localStorage 恢复聊天记录
+// 页面加载时恢复对话历史
 onMounted(() => {
-  loadChatFromStorage()
-})
-
-// 监听聊天消息变化，自动保存到 localStorage
-watchEffect(() => {
-  // 追踪 chatMessages.value 的依赖
-  const messages = chatMessages.value
-  if (messages.length > 0) {
-    saveChatToStorage()
-  }
+  loadConversations()
+  ensureCurrentConversation()
 })
 
 const handleImageSelected = async (file: File, preview: string) => {
@@ -228,48 +385,99 @@ const handleImageSelected = async (file: File, preview: string) => {
 }
 
 const handleSendMessage = async (message: string, image?: string) => {
+  // 确保有当前对话
+  ensureCurrentConversation()
+  
+  // 获取当前对话
+  const conv = conversations.value.find(c => c.id === currentConversationId.value)
+  if (!conv) return
+  
   // 添加用户消息
-  chatMessages.value.push({
-    role: 'user',
-    content: message,
-    image
-  })
+  const userMsg: ChatMessage = { role: 'user', content: message, image }
+  conv.messages.push(userMsg)
+  conv.updatedAt = Date.now()
+  
+  // 添加空的助手消息占位符
+  const assistantMsgIndex = conv.messages.length
+  conv.messages.push({ role: 'assistant', content: '' })
   
   isChatLoading.value = true
+  saveConversations()
+  
+  // 创建 AbortController 用于取消请求
+  abortController.value = new AbortController()
+  let streamError = false
   
   try {
-    const response = await sendChatMessage(message, image, chatSessionId.value)
-    
-    if (response.success) {
-      // 添加助手回复
-      chatMessages.value.push({
-        role: 'assistant',
-        content: response.response
-      })
-    } else {
-      chatMessages.value.push({
-        role: 'assistant',
-        content: `抱歉，发生了错误: ${response.error}`
-      })
+    await sendChatMessageStream(
+      message,
+      // onChunk: 更新消息内容
+      (chunk) => {
+        const c = conversations.value.find(c => c.id === currentConversationId.value)
+        if (c && c.messages[assistantMsgIndex]) {
+          c.messages[assistantMsgIndex].content += chunk
+          saveConversations()
+        }
+      },
+      // onError: 处理错误
+      image,
+      chatSessionId.value,
+      (error) => {
+        streamError = true
+        const c = conversations.value.find(c => c.id === currentConversationId.value)
+        if (c && c.messages[assistantMsgIndex]) {
+          c.messages[assistantMsgIndex].content = `抱歉，发生了错误: ${error}`
+          saveConversations()
+        }
+      },
+      // onDone: 完成
+      () => {
+        // 流式结束，不做任何事（内容已经通过 onChunk 更新）
+      },
+      // Pass the AbortSignal
+      abortController.value.signal
+    )
+  } catch (error: any) {
+    // Check if it's an abort error
+    if (error?.name === 'AbortError' || error?.message?.includes('abort')) {
+      const c = conversations.value.find(c => c.id === currentConversationId.value)
+      if (c && c.messages[assistantMsgIndex] && !c.messages[assistantMsgIndex].content) {
+        c.messages[assistantMsgIndex].content = '[已停止]'
+        saveConversations()
+      }
+    } else if (!streamError) {
+      const c = conversations.value.find(c => c.id === currentConversationId.value)
+      if (c && c.messages[assistantMsgIndex]) {
+        c.messages[assistantMsgIndex].content = `网络错误: ${error}`
+        saveConversations()
+      }
     }
-  } catch (error) {
-    chatMessages.value.push({
-      role: 'assistant',
-      content: `网络错误: ${error}`
-    })
   } finally {
     isChatLoading.value = false
+    abortController.value = null
+  }
+}
+
+const handleStop = () => {
+  if (abortController.value) {
+    abortController.value.abort()
   }
 }
 
 const handleClearChat = async () => {
   try {
     await clearChat(chatSessionId.value)
-    chatMessages.value = []
-    // 清除 localStorage 中的聊天记录
-    localStorage.removeItem(CHAT_STORAGE_KEY)
   } catch (error) {
     console.error('Clear chat error:', error)
+  }
+  
+  // 清空当前对话的消息
+  const conv = conversations.value.find(c => c.id === currentConversationId.value)
+  if (conv) {
+    conv.messages = []
+    conv.title = '新对话'
+    conv.updatedAt = Date.now()
+    saveConversations()
   }
 }
 
@@ -478,38 +686,157 @@ const formatSize = (bytes: number): string => {
 
 .chat-wrapper {
   height: 100%;
-}
-
-.section-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.section-header h2 {
-  margin: 0;
-  font-size: 1.2rem;
-  color: var(--text-primary);
-}
-
-.section-desc {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  margin: 0;
-}
-
-.file-info {
-  color: var(--text-muted);
-  font-size: 0.8rem;
+/* ========== 对话历史侧边栏 ========== */
+.conversation-sidebar {
+  width: 240px;
   background: var(--bg-card);
-  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.new-chat-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.new-chat-btn:hover {
+  background: var(--primary-dark);
+}
+
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.25rem;
+}
+
+.conversation-item:hover {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.conversation-item.active {
+  background: rgba(99, 102, 241, 0.25);
+  border: 1px solid var(--primary);
+}
+
+.conv-info {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.conv-title {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conv-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.delete-conv-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.25rem;
+  opacity: 0;
+  transition: all 0.2s;
   border-radius: 4px;
 }
 
-/* ===== Section Cards ===== */
+.conversation-item:hover .delete-conv-btn {
+  opacity: 1;
+}
+
+.delete-conv-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+.no-conversations {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 2rem 1rem;
+}
+
+/* 切换侧边栏按钮 */
+.toggle-sidebar-btn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: none;
+  color: var(--text-secondary);
+  padding: 0.5rem 0.3rem;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  font-size: 0.7rem;
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+.toggle-sidebar-btn:hover {
+  background: var(--border);
+  color: var(--text-primary);
+}
+
+.chat-main {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+/* ========== Section Cards ========== */
 .upload-section,
 .prompt-section,
 .preview-section,
@@ -679,7 +1006,6 @@ const formatSize = (bytes: number): string => {
 
 /* ===== 响应式 ===== */
 @media (max-width: 768px) {
-  /* 导航栏 - 超紧凑 */
   .top-nav {
     gap: 0.25rem;
     padding: 0.4rem 0.5rem;
@@ -698,7 +1024,6 @@ const formatSize = (bytes: number): string => {
     font-size: 0.8rem;
   }
   
-  /* Hero - 极简 */
   .hero {
     padding: 0.6rem 0.5rem;
   }
@@ -716,10 +1041,9 @@ const formatSize = (bytes: number): string => {
   
   .hero-desc {
     font-size: 0.75rem;
-    display: none; /* 手机上隐藏描述 */
+    display: none;
   }
   
-  /* 主内容 - 全屏无滚动 */
   .main-content {
     padding: 0.5rem 0.35rem 0.5rem;
     min-height: auto;
@@ -728,7 +1052,6 @@ const formatSize = (bytes: number): string => {
     flex-direction: column;
   }
   
-  /* 标签页内容 */
   .tab-content {
     flex: 1;
     display: flex;
@@ -736,7 +1059,38 @@ const formatSize = (bytes: number): string => {
     overflow: hidden;
   }
   
-  /* 卡片 - 极紧凑 */
+  .chat-wrapper {
+    flex-direction: column;
+    height: 100%;
+  }
+  
+  .conversation-sidebar {
+    width: 100%;
+    height: 120px;
+    flex-shrink: 0;
+  }
+  
+  .conversation-list {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+  
+  .conversation-item {
+    flex-shrink: 0;
+    width: 140px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .delete-conv-btn {
+    opacity: 1;
+  }
+  
   .upload-section,
   .prompt-section,
   .preview-section,
@@ -752,14 +1106,6 @@ const formatSize = (bytes: number): string => {
   
   .section-header h2 {
     font-size: 0.85rem;
-  }
-  
-  /* 分析模式 */
-  .analyze-grid {
-    grid-template-columns: 1fr !important;
-    gap: 0.4rem;
-    flex: 1;
-    overflow: auto;
   }
   
   .preview-section {
@@ -781,17 +1127,6 @@ const formatSize = (bytes: number): string => {
     font-size: 0.8rem;
   }
   
-  /* 对话模式 - 全屏 */
-  .chat-tab {
-    flex: 1;
-    min-height: auto;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  
-  /* 提示词输入 */
   .prompt-card {
     border-radius: 6px;
     flex-shrink: 0;
@@ -810,7 +1145,6 @@ const formatSize = (bytes: number): string => {
     font-size: 0.65rem;
   }
   
-  /* 底部 - 极小 */
   .footer {
     padding: 0.4rem 0.5rem;
     font-size: 0.65rem;
@@ -822,7 +1156,6 @@ const formatSize = (bytes: number): string => {
   }
 }
 
-/* 小屏幕手机 - 更紧凑 */
 @media (max-width: 480px) {
   .hero {
     padding: 0.75rem 0.5rem;
@@ -863,19 +1196,6 @@ const formatSize = (bytes: number): string => {
   
   .result-text {
     max-height: 180px;
-    font-size: 0.8rem;
-  }
-  
-  .chat-tab {
-    height: calc(100vh - 200px);
-  }
-  
-  .nav-brand {
-    font-size: 0.9rem;
-  }
-  
-  .nav-tab {
-    padding: 0.35rem 0.6rem;
     font-size: 0.8rem;
   }
 }
