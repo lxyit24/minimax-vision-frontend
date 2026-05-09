@@ -7,6 +7,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   image?: string
+  reasoning?: string  // 思考过程
 }
 
 export interface ChatResponse {
@@ -60,7 +61,9 @@ export async function sendChatMessageStream(
   sessionId?: string,
   onError?: (error: string) => void,
   onDone?: () => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  onReasoning?: (reasoning: string) => void,
+  onReasoningEnd?: (reasoning: string) => void
 ): Promise<string> {
   // 使用 fetch 实现流式读取
   const response = await fetch(`${API_BASE}/api/chat/stream`, {
@@ -105,6 +108,12 @@ export async function sendChatMessageStream(
 
           if (data.type === 'session_id') {
             // Session ID received, could be stored if needed
+          } else if (data.type === 'reasoning') {
+            // 思考内容
+            onReasoning?.(data.reasoning)
+          } else if (data.type === 'reasoning_end') {
+            // 思考结束
+            onReasoningEnd?.(data.reasoning)
           } else if (data.type === 'content') {
             fullContent += data.content
             onChunk(data.content)

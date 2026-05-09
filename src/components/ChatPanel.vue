@@ -43,6 +43,17 @@
           <div v-if="msg.image" class="message-image">
             <img :src="msg.image" alt="Attached image" />
           </div>
+          <!-- 思考过程 (可折叠) -->
+          <div v-if="msg.reasoning" class="message-reasoning">
+            <button class="reasoning-toggle" @click="toggleReasoning(index)">
+              <span class="reasoning-icon">🧠</span>
+              <span>思考过程</span>
+              <span class="chevron" :class="{ collapsed: reasoningCollapsed[index] }">▼</span>
+            </button>
+            <div v-show="!reasoningCollapsed[index]" class="reasoning-content">
+              {{ msg.reasoning }}
+            </div>
+          </div>
           <!-- 文字 (支持 Markdown 和 HTML) -->
           <div class="message-text" v-html="renderContent(msg.content)"></div>
         </div>
@@ -138,6 +149,7 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   image?: string
+  reasoning?: string  // 思考过程
 }
 
 const emit = defineEmits<{
@@ -157,6 +169,7 @@ const attachedImageFile = ref<File | null>(null)
 const inputArea = ref<HTMLTextAreaElement | null>(null)
 const messagesContainer = ref<HTMLDivElement | null>(null)
 const isFullscreen = ref(false)
+const reasoningCollapsed = ref<Record<number, boolean>>({})  // 跟踪每个消息的思考过程折叠状态
 
 const canSend = computed(() => {
   return (inputText.value.trim() || attachedImage.value) && !props.isLoading
@@ -292,6 +305,11 @@ watch(isFullscreen, (newVal) => {
     document.body.style.overflow = ''
   }
 })
+
+// 切换思考过程折叠状态
+function toggleReasoning(index: number) {
+  reasoningCollapsed.value[index] = !reasoningCollapsed.value[index]
+}
 </script>
 
 <style scoped>
@@ -546,6 +564,56 @@ watch(isFullscreen, (newVal) => {
 
 .message-text div {
   margin: 0.25rem 0;
+}
+
+/* 思考过程 */
+.message-reasoning {
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
+.reasoning-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.reasoning-toggle:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.reasoning-icon {
+  font-size: 1rem;
+}
+
+.chevron {
+  margin-left: auto;
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+}
+
+.chevron.collapsed {
+  transform: rotate(-90deg);
+}
+
+.reasoning-content {
+  padding: 0.5rem 0.75rem;
+  padding-top: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #94a3b8);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* 加载中 */

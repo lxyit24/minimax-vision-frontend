@@ -22,6 +22,20 @@
         </button>
       </div>
       <div class="nav-actions">
+        <!-- 已登录用户信息 -->
+        <div v-if="isLoggedIn" class="user-info">
+          <router-link to="/user-center" class="user-name-link">
+            <span class="user-name">{{ currentUser?.display_name || currentUser?.username }}</span>
+            <span class="user-quota">💰 {{ formatQuota(currentUser?.quota || 0) }}</span>
+          </router-link>
+          <button class="logout-btn" @click="handleLogout" title="退出登录">
+            退出
+          </button>
+        </div>
+        <!-- 未登录 -->
+        <button v-else class="login-btn" @click="showLoginModal = true">
+          🔐 登录
+        </button>
         <router-link to="/docs" class="nav-link">
           📚 API 文档
         </router-link>
@@ -175,11 +189,53 @@
         ✅ 已复制到剪贴板
       </div>
     </Transition>
+
+    <!-- 登录弹窗 -->
+    <Transition name="modal">
+      <div v-if="showLoginModal" class="modal-overlay" @click.self="showLoginModal = false">
+        <div class="login-modal">
+          <div class="modal-header">
+            <h2>🔐 登录天行AI</h2>
+            <button class="modal-close" @click="showLoginModal = false">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label>用户名</label>
+              <input 
+                v-model="loginUsername" 
+                type="text" 
+                placeholder="请输入用户名"
+                @keyup.enter="handleLogin"
+              />
+            </div>
+            <div class="form-group">
+              <label>密码</label>
+              <input 
+                v-model="loginPassword" 
+                type="password" 
+                placeholder="请输入密码"
+                @keyup.enter="handleLogin"
+              />
+            </div>
+            <div v-if="loginError" class="login-error">
+              ❌ {{ loginError }}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn-cancel" @click="showLoginModal = false">取消</button>
+            <button class="btn-login" @click="handleLogin" :disabled="isLoggingIn">
+              {{ isLoggingIn ? '登录中...' : '登录' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import ImageUploader from '@/components/ImageUploader.vue'
 import AnalysisResult from '@/components/AnalysisResult.vue'
 import ChatPanel from '@/components/ChatPanel.vue'
@@ -361,10 +417,135 @@ const abortController = ref<AbortController | null>(null)
 // Toast
 const showCopyToast = ref(false)
 
-// 页面加载时恢复对话历史
+// ========== 登录状态管理 ==========
+interface UserInfo {
+  id: number
+  username: string
+  display_name: string
+  quota: number
+  used_quota: number
+  role: number
+  email: string
+}
+
+const TOKEN_KEY = 'minimax-vision-auth-token'
+const isLoggedIn = ref(false)
+const currentUser = ref<UserInfo | null>(null)
+const showLoginModal = ref(false)
+const loginUsername = ref('')
+const loginPassword = ref('')
+const loginError = ref('')
+const isLoggingIn = ref(false)
+
+// 格式化配额显示
+const formatQuota = (quota: number): string => {
+  if (quota >= 100000000) return (quota / 100000000).toFixed(1) + '亿'
+  if (quota >= 10000) return (quota / 10000).toFixed(1) + '万'
+  return quota.toLocaleString()
+}
+
+// 检查用户登录状态
+const checkUserSession = async () => {
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (!token) {
+    isLoggedIn.value = false
+    currentUser.value = null
+    return
+  }
+  
+  try {
+    const response = await fetch('/api/userinfo', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    const data = await response.json()
+    if (data.success) {
+      isLoggedIn.value = true
+      currentUser.value = data.user
+    } else {
+      localStorage.removeItem(TOKEN_KEY)
+      isLoggedIn.value = false
+      currentUser.value = null
+    }
+  } catch (e) {
+    localStorage.removeItem(TOKEN_KEY)
+    isLoggedIn.value = false
+    currentUser.value = null
+  }
+}
+
+const router = useRouter()
+
+// 登录
+const handleLogin = async () => {
+  if (!loginUsername.value || !loginPassword.value) {
+    loginError.value = '请输入用户名和密码'
+    return
+  }
+  
+  isLoggingIn.value = true
+  loginError.value = ''
+  
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        username: loginUsername.value,
+        password: loginPassword.value
+      })
+    })
+    
+    const data = await response.json()
+    
+    if (data.success) {
+      localStorage.setItem(TOKEN_KEY, data.token)
+      isLoggedIn.value = true
+      currentUser.value = data.user
+      showLoginModal.value = false
+      loginUsername.value = ''
+      loginPassword.value = ''
+      // 跳转到用户中心
+      router.push('/user-center')
+    } else {
+      loginError.value = data.error || '登录失败'
+    }
+  } catch (e) {
+    loginError.value = '网络错误，请稍后重试'
+  } finally {
+    isLoggingIn.value = false
+  }
+}
+
+// 登出
+const handleLogout = async () => {
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) {
+    try {
+      await fetch('/api/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+    } catch (e) {
+      // ignore errors
+    }
+  }
+  
+  localStorage.removeItem(TOKEN_KEY)
+  isLoggedIn.value = false
+  currentUser.value = null
+}
+
+// 页面加载时恢复对话历史和检查登录状态
 onMounted(() => {
   loadConversations()
   ensureCurrentConversation()
+  checkUserSession()
 })
 
 const handleImageSelected = async (file: File, preview: string) => {
@@ -419,9 +600,11 @@ const handleSendMessage = async (message: string, image?: string) => {
           saveConversations()
         }
       },
-      // onError: 处理错误
+      // image
       image,
+      // sessionId
       chatSessionId.value,
+      // onError
       (error) => {
         streamError = true
         const c = conversations.value.find(c => c.id === currentConversationId.value)
@@ -430,12 +613,28 @@ const handleSendMessage = async (message: string, image?: string) => {
           saveConversations()
         }
       },
-      // onDone: 完成
+      // onDone
       () => {
         // 流式结束，不做任何事（内容已经通过 onChunk 更新）
       },
       // Pass the AbortSignal
-      abortController.value.signal
+      abortController.value.signal,
+      // onReasoning: 思考内容
+      (reasoning) => {
+        const c = conversations.value.find(c => c.id === currentConversationId.value)
+        if (c && c.messages[assistantMsgIndex]) {
+          c.messages[assistantMsgIndex].reasoning = (c.messages[assistantMsgIndex].reasoning || '') + reasoning
+          saveConversations()
+        }
+      },
+      // onReasoningEnd: 思考结束
+      (fullReasoning) => {
+        const c = conversations.value.find(c => c.id === currentConversationId.value)
+        if (c && c.messages[assistantMsgIndex]) {
+          c.messages[assistantMsgIndex].reasoning = fullReasoning
+          saveConversations()
+        }
+      }
     )
   } catch (error: any) {
     // Check if it's an abort error
@@ -1198,5 +1397,229 @@ const formatSize = (bytes: number): string => {
     max-height: 180px;
     font-size: 0.8rem;
   }
+}
+
+/* ===== 登录按钮 ===== */
+.login-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-btn:hover {
+  background: var(--primary-dark);
+}
+
+.user-name-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.user-name-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===== 用户信息 ===== */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-name {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.user-quota {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.logout-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+/* ===== 登录弹窗 ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(4px);
+}
+
+.login-modal {
+  background: var(--bg-card);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  border: 1px solid var(--border);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg-dark);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.form-group input::placeholder {
+  color: var(--text-muted);
+}
+
+.login-error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.btn-cancel {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background: var(--bg-dark);
+}
+
+.btn-login {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.btn-login:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+.btn-login:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 弹窗动画 */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.modal-enter-active .login-modal,
+.modal-leave-active .login-modal {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .login-modal,
+.modal-leave-to .login-modal {
+  transform: scale(0.95);
+  opacity: 0;
 }
 </style>

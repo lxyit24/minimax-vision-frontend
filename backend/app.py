@@ -801,7 +801,10 @@ def call_minimax_chat_stream(messages: list, session_id: str = None):
                         chunk = json.loads(data_str)
                         if 'choices' in chunk and len(chunk['choices']) > 0:
                             delta = chunk['choices'][0].get('delta', {})
-                            content = delta.get('reasoning_content') or delta.get('content', '')
+                            reasoning_content = delta.get('reasoning_content')
+                            content = delta.get('content', '')
+                            if reasoning_content:
+                                yield f"data: {json.dumps({'reasoning': reasoning_content})}\n\n"
                             if content:
                                 yield f"data: {json.dumps({'content': content})}\n\n"
                     except json.JSONDecodeError:
@@ -990,13 +993,17 @@ def chat_stream():
                 history = history[2:]
         
         full_response = ""
+        full_reasoning = ""  # 跟踪思考内容
         try:
             # 调用流式 MiniMax API
             for chunk in call_minimax_chat_stream(history, session_id):
                 # 解析并发送内容
                 try:
                     chunk_data = json.loads(chunk.replace("data: ", "").strip())
-                    if 'content' in chunk_data:
+                    if 'reasoning' in chunk_data:  # 思考内容单独处理
+                        full_reasoning += chunk_data['reasoning']
+                        yield f"data: {json.dumps({'type': 'reasoning', 'reasoning': chunk_data['reasoning']})}\n\n"
+                    elif 'content' in chunk_data:
                         full_response += chunk_data['content']
                         yield f"data: {json.dumps({'type': 'content', 'content': chunk_data['content']})}\n\n"
                     elif 'error' in chunk_data:
@@ -1004,6 +1011,10 @@ def chat_stream():
                         return
                 except json.JSONDecodeError:
                     continue
+            
+            # 发送思考结束事件
+            if full_reasoning:
+                yield f"data: {json.dumps({'type': 'reasoning_end', 'reasoning': full_reasoning})}\n\n"
             
             # 添加助手回复到历史
             history.append({
@@ -1092,6 +1103,9 @@ def chat():
             "role": "system",
             "content": system_prompt
         })
+    
+    # 初始化 final_message（如果有图片，会被覆盖）
+    final_message = user_message
     
     # 如果有图片，先用视觉分析后端分析图片
     if image_data:
